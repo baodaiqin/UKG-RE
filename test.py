@@ -21,7 +21,7 @@ import argparse
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--dir_test', type=str, default='./test_initialized', required=True, help='path to the preprocessed dataset for testing')
-parser.add_argument('--model_add', type=str, default=None, required=True, help='address to the trained model')
+parser.add_argument('--model_addr', type=str, default=None, required=True, help='address to the trained model')
 parser.add_argument('--result_dir', type=str, default=None, required=True, help='dir to save the results')
 parser.add_argument('--nb_batch_triple', type=int, default=200, help='the number of batch for kg triples')
 parser.add_argument('--batch_size', type=int, default=50, help='batch size of target entity pairs')
@@ -135,7 +135,7 @@ def main(_):
 	output, test_att, test_pred = sess.run([model.test_output, model.test_att, model.test_pred], feed_dict)
 	return output, test_att, test_pred
 
-    saver.restore(sess, args.model_add)
+    saver.restore(sess, args.model_addr)
 
     stack_output = []
     stack_label = []
