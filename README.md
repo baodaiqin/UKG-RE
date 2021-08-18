@@ -61,4 +61,16 @@
 5. Test the trained model.
 
 ### Easy Start
-You can import our package and load pre-trained models.
+- You can import our package and load pre-trained models.
+~~~~
+>>> import ugdsre
+>>> model = ugdsre.model('./train_initialized', 'name_of_trained_model')
+~~~~
+- Then use `infer` to do bag-level relation extraction from multi-hop `paths`.
+~~~~
+>>> model.infer([{"e1_id": "h1", "e2_id": "t1", "e1_word": "w1", "e2_word": "w2", 
+                  "paths": [["p1_w1", "p1_w2", ...], ...], 
+                  "path_e1_e2_positions": [[p1_e1_posi, p1_e2_posi], ...]}, ...])
+
+[("rel1", score), ...]
+~~~~
