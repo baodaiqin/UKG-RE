@@ -70,7 +70,7 @@
     ~~~~
     CUDA_VISIBLE_DEVICES=0 python test.py \
         --dir_test ./test_initialized \
-        --model_addr ./model_saved/... \
+        --model_addr ./model_saved/... 
     ~~~~
     
 
