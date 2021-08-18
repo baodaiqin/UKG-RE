@@ -58,19 +58,29 @@
         --dir_out_test ./test_initialized \
     ~~~~
 3. Train your own model on the preprocessed dataset.
+    ~~~
+    CUDA_VISIBLE_DEVICES=0 python train.py \
+        --dir_train ./train_initialized \
+        --model_dir ./model_saved \
+        --learning_rate 0.02 \
+        --max_epoch 50 \
+        --strategy pretrain+ranking 
+    ~~~
 5. Test the trained model.
 
 ### Easy Start
 - You can import our package and load pre-trained models.
 ~~~~
 >>> import ugdsre
->>> model = ugdsre.model('./train_initialized', 'name_of_trained_model')
+>>> model = ugdsre.model('folder_of_the_preprocessed_trainig_data', 'address_to_the_trained_model')
 ~~~~
 - Then use `infer` to do bag-level relation extraction from multi-hop `paths`.
 ~~~~
->>> model.infer([{"e1_id": "h1", "e2_id": "t1", "e1_word": "w1", "e2_word": "w2", 
+>>> model.infer([
+                  {"e1_id": "h1", "e2_id": "t1", "e1_word": "w1", "e2_word": "w2", 
                   "paths": [["p1_w1", "p1_w2", ...], ...], 
-                  "path_e1_e2_positions": [[p1_e1_posi, p1_e2_posi], ...]}, ...])
+                  "path_e1_e2_positions": [[p1_e1_posi, p1_e2_posi], ...]}, ...
+                  ])
 
 [("rel1", score), ...]
 ~~~~
