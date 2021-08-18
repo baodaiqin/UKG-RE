@@ -36,7 +36,7 @@
    - `relation2id` is the mapping of relation to its id.
    - `triples` is the list of KG triples for training a KGC model.
    - Each entry fo `train` and `test` is a bag of paths, where
-      - `e1_id` and `e2_id` are the id of target entity `e1` and entity `e2`.
+      - `e1_id` and `e2_id` are the KG id of target entity `e1` and entity `e2`.
       - `relation` is the relation between target entity `e1` and entity `e2`.
       - `e1_word` and `e2_word` are the textual expression of target entity `e1` and entity `e2`.
       - `kg_paths` is the bag of paths only consist of knowledge graph edges.
