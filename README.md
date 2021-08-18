@@ -58,15 +58,21 @@
         --dir_out_test ./test_initialized \
     ~~~~
 3. Train your own model on the preprocessed dataset.
-    ~~~
+    ~~~~
     CUDA_VISIBLE_DEVICES=0 python train.py \
         --dir_train ./train_initialized \
         --model_dir ./model_saved \
         --learning_rate 0.02 \
         --max_epoch 50 \
         --strategy pretrain+ranking 
-    ~~~
+    ~~~~
 5. Test the trained model.
+    ~~~~
+    CUDA_VISIBLE_DEVICES=0 python test.py \
+        --dir_test ./test_initialized \
+        --model_addr ./model_saved/... \
+    ~~~~
+    
 
 ### Easy Start
 - You can import our package and load pre-trained models.
