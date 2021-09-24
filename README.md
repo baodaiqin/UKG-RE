@@ -59,7 +59,7 @@
         --dir_out_train ./train_initialized \
         --dir_out_test ./test_initialized \
     ~~~~
-3. Train your own model on the preprocessed dataset.
+3. Train your own model on the preprocessed dataset. Static configuration (e.g., hidden size) is located in `settings.py` script.
     ~~~~
     CUDA_VISIBLE_DEVICES=0 python ugdsre.py \
         --mode train \
@@ -82,7 +82,7 @@
 - You can import our package and load pre-trained models.
 ~~~~
 >>> import ugdsre
->>> model = ugdsre.UGDSRE('folder_of_the_preprocessed_trainig_data', 'address_to_the_trained_model')
+>>> model = ugdsre.UGDSRE(dir_train='folder_of_the_preprocessed_trainig_data', model_dir='address_to_the_trained_model')
 ~~~~
 - Then use `infer` to do bag-level relation extraction from multi-hop `paths`.
 ~~~~
