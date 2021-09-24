@@ -50,7 +50,7 @@
 
 ### Usage
 1. Prepare the dataset (e.g., `dataset.json`) in the format as introduced above.
-2. Preprocess the dataset, and the processed data is stored in specified folders (e.g., `./train_initialized` and `./test_initialized`).
+2. Preprocess the dataset, and store the processed data in specified folders (e.g., `./train_initialized` and `./test_initialized`).
 
     ~~~~
     python preprocess.py 
