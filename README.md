@@ -5,6 +5,8 @@
 - numpy
 - sklearn
 - tqdm
+- tabulate
+
 ### Dataset Format:
 ~~~~
 {
@@ -59,7 +61,8 @@
     ~~~~
 3. Train your own model on the preprocessed dataset.
     ~~~~
-    CUDA_VISIBLE_DEVICES=0 python train.py \
+    CUDA_VISIBLE_DEVICES=0 python ugdsre.py \
+        --mode train \
         --dir_train ./train_initialized \
         --model_dir ./model_saved \
         --learning_rate 0.02 \
@@ -68,7 +71,8 @@
     ~~~~
 5. Test the trained model.
     ~~~~
-    CUDA_VISIBLE_DEVICES=0 python test.py \
+    CUDA_VISIBLE_DEVICES=0 python ugdsre.py \
+        --mode test \
         --dir_test ./test_initialized \
         --model_addr ./model_saved/... 
     ~~~~
@@ -78,7 +82,7 @@
 - You can import our package and load pre-trained models.
 ~~~~
 >>> import ugdsre
->>> model = ugdsre.model('folder_of_the_preprocessed_trainig_data', 'address_to_the_trained_model')
+>>> model = ugdsre.UGDSRE('folder_of_the_preprocessed_trainig_data', 'address_to_the_trained_model')
 ~~~~
 - Then use `infer` to do bag-level relation extraction from multi-hop `paths`.
 ~~~~
