@@ -26,7 +26,7 @@ class NN(object):
                 self.rank_topn = rank_topn
                 
 		# placeholders for text models
-		self.word = tf.placeholder(dtype=tf.int32,shape=[None, self.max_length], name='input_word')
+		self.word = tf.placeholder(dtype=tf.int32,shape=[None, self.max_length], name='input_words')
 		self.posi1 = tf.placeholder(dtype=tf.int32,shape=[None, self.max_length], name='input_posi1')
 		self.posi2 = tf.placeholder(dtype=tf.int32,shape=[None, self.max_length], name='input_posi2')
 
