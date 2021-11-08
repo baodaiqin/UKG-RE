@@ -85,12 +85,12 @@ Default settings are located in `settings.py` script. It contains the following 
   
 - Check the predicted relation and corresponding confidence score:
   ~~~~
-  >>> results[i]['triple_sc']
+  >>> results[i]["triple_sc"]
   (e1, rel1, e2, score)
   ~~~~
   
 - Check the supporting multi-hop path evidences and corresponding attention score:
   ~~~~
-  >>> results[i]['path_att']
+  >>> results[i]["path_att"]
   [(path1, att1), (path2, att2), ...]
   ~~~~
