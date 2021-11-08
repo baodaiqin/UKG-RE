@@ -1,4 +1,7 @@
 # UKG-RE
+
+<img src="system_description.png" width="600">
+
 ### Dependencies
 - python = 2.x
 - tensorflow = 1.9.0
