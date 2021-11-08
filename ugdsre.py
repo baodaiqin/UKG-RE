@@ -1,7 +1,7 @@
 import tensorflow as tf
 import numpy as np
 import time, datetime, sys, os, json, argparse
-from sklearn.metrics import average_precision_score, precision_score, recall_score, f1_score
+from sklearn.metrics import average_precision_score, precision_score, recall_score, f1_score, accuracy_score
 import threading
 from tqdm import tqdm
 from tabulate import tabulate
@@ -12,13 +12,19 @@ import network_ug as network
 from kg_dataset_transe import KnowledgeGraph
 from metrics import metrics
 
+from load_ug import UG
+
 class UGDSRE:
 
     def __init__(self, dir_train=conf.DIR_TRAIN, dir_test=conf.DIR_TEST, model_dir=conf.MODEL_DIR,
                  nb_batch_triple=conf.NB_BATCH_TRIPLE, batch_size=conf.BATCH_SIZE, testing_batch_size=conf.TESTING_BATCH_SIZE,
                  max_epoch=conf.MAX_EPOCH, max_length=conf.MAX_LENGTH, hidden_size=conf.HIDDEN_SIZE, posi_size=conf.POSI_SIZE,
                  learning_rate=conf.LR, learning_rate_kgc=conf.LR_KGC, keep_prob=conf.KEEP_PROB, margin=conf.MARGIN,
-                 strategy=conf.STRATEGY, checkpoint_every=conf.CHECKPOINT_EVERY, result_dir=conf.RESULT_DIR, p_at_n=conf.P_AT_N):
+                 strategy=conf.STRATEGY, checkpoint_every=conf.CHECKPOINT_EVERY, result_dir=conf.RESULT_DIR, p_at_n=conf.P_AT_N,
+                 load_graph=True, addr_kg_train=conf.ADDR_KG_Train, addr_kg_test=conf.ADDR_KG_Test, addr_tx=conf.ADDR_TX, addr_emb=conf.ADDR_EMB):
+
+        if load_graph:
+            self.G_ug = UG(addr_kg_train, addr_kg_test, addr_tx, addr_emb)
 
         self.dir_train = dir_train
         self.dir_test = dir_test
@@ -55,12 +61,8 @@ class UGDSRE:
         self.data = None
         self.KG = None
 
-    def train(self, strategy=None):
-        if not strategy:
-            strategy = self.strategy
-        else:
-            strategy = strategy
-            
+    def train(self):
+        strategy = self.strategy
         tf.reset_default_graph()
         self.data, self.KG = self.__load_data()
 
@@ -78,7 +80,7 @@ class UGDSRE:
         tfconfig.gpu_options.allow_growth = True
         sess = tf.Session(config=tfconfig)
 
-        model, global_step, optimizer, grads_and_vars, train_op, global_step_kgc, optimizer_kgc, grads_and_vars_kgc, train_op_kgc = self.__model_init(strategy=strategy)
+        model, global_step, optimizer, grads_and_vars, train_op, global_step_kgc, optimizer_kgc, grads_and_vars_kgc, train_op_kgc = self.__model_init(strategy=self.strategy)
 
         sess.run(tf.global_variables_initializer())
         saver = tf.train.Saver(max_to_keep=None)
@@ -109,8 +111,8 @@ class UGDSRE:
             stack_label = []
             train_order = range(len(self.data['instance_scope']))
             
-            if self.strategy in ['none', 'pretrain', 'pretrain_ranking']:
-                if self.strategy == 'pretrain_ranking':
+            if strategy in ['none', 'pretrain', 'pretrain_ranking']:
+                if strategy == 'pretrain_ranking':
                     print('pretrain phase in pretrain_ranking starts!')
                 pbar = tqdm(range(self.max_epoch), desc="Training progress")
                 for one_epoch in pbar:
@@ -130,14 +132,14 @@ class UGDSRE:
                         label_ = np.zeros((self.batch_size, self.num_classes))
                         label_[np.arange(self.batch_size), label] = 1
 
-                        if self.strategy in ['none']:
+                        if strategy in ['none']:
                             output, loss, correct_predictions = self.__train_step(sess, model, train_op, global_step,
                                                                                   train_head_batch, train_tail_batch, self.data['train_word'][index,:],
                                                                                   self.data['train_posi1'][index,:], self.data['train_posi2'][index,:],
                                                                                   self.data['train_label'][index],
                                                                                   label_, np.array(scope), weights, self.data['train_comp_fea'][index,:])
 
-                        elif self.strategy in ['pretrain', 'pretrain_ranking']:
+                        elif strategy in ['pretrain', 'pretrain_ranking']:
                             
                             output, loss, correct_predictions = self.__train_step(sess, model, train_op, global_step,
                                                                                   train_head_tx_batch, train_tail_tx_batch, self.data['train_word_tx'][index_tx,:],
@@ -174,8 +176,8 @@ class UGDSRE:
                         description = 'have saved model to '+path
                         pbar.set_description(description)
 
-            if self.strategy in ['ranking', 'pretrain_ranking']:
-                if self.strategy == 'pretrain_ranking':
+            if strategy in ['ranking', 'pretrain_ranking']:
+                if strategy == 'pretrain_ranking':
                     print('ranking phase in pretrain_ranking starts!')
 
                 pbar = tqdm(range(self.max_epoch), desc="Training progress")
@@ -222,13 +224,15 @@ class UGDSRE:
         coord.join(threads)
 
 
-    def infer(self, bags):
+    def infer(self, lst_ep, nb_path, cutoff):
         """
-        extract relations from a given list of bags with the help of a previously trained model
+        extract relations from a given list of entity pair (i.e., (h, t)) with the help of a previously trained model
         
-        @param bags:  [{'e1_id': , ..., 'paths': , ...}, ...]
+        @param lst_ep:  [(h1, t1), (h2, t2), ...]
         """
         tf.reset_default_graph()
+        
+        bags = self.G_ug.extract_ug_paths(lst_ep, nb_path=nb_path, cutoff=cutoff)
         
         paths_head, paths_tail, paths_word, paths_posi1, paths_posi2, paths_scope, paths_comp_fea = self.__preprocess_ug_paths(bags)
 
@@ -243,9 +247,9 @@ class UGDSRE:
         sess = tf.Session(config=tfconfig)
 
         sess.run(tf.global_variables_initializer())
-        
+
+        saver = tf.train.Saver()
         checkpoint_fle = tf.train.latest_checkpoint(self.model_dir + '/')
-        saver = tf.train.import_meta_graph(checkpoint_fle + '.meta')
         saver.restore(sess, checkpoint_fle)
 
         
@@ -261,18 +265,40 @@ class UGDSRE:
 
         test_pred, test_sc, test_att = sess.run([model.test_pred, model.test_sc, model.test_att], feed_dict)
         test_pred_rel = [self.id2relation[i] for i in test_pred]
-        print(test_att.shape)
+
+        all_results = []
+        
         all_paths = []
-        for ele in bags:
-            all_paths.extend(ele['paths'])
-        print(len(all_paths))
-        #print(len(bags[0]['paths']), len(bags[1]['paths']))
-        return [(rel, sc) for rel, sc in zip(test_pred_rel, test_sc)]
+        scope = [0]
+        for epi, ele in enumerate(bags):
+            rel = test_pred_rel[epi]
+            sc = test_sc[epi]
+            e1 = ele['e1_id']
+            e2 = ele['e2_id']
+
+            nb_path = len(ele['paths'])
+            att_path = test_att[scope[-1]:(scope[-1]+nb_path)]
+            scope.append(scope[-1]+nb_path)
+
+            result = {}
+            result['triple_sc'] = (e1, rel, e2, sc)
+
+            sum_att = 0.0
+            for att, path in zip(att_path, ele['paths']):
+                path = ' '.join(path)
+                path_att = (path, att)
+                result.setdefault('path_att', []).append(path_att)
+                sum_att += att
+                
+            all_results.append(result)
+            #print(result['path_att'])
+            #print(result['triple_sc'])
+            #print(sum_att)
+        return all_results
 
     
     def test(self):
         tf.reset_default_graph()
-        
         self.data_test, _ = self.__load_data(is_training=False)
         
         tfconfig = tf.ConfigProto()
@@ -299,10 +325,10 @@ class UGDSRE:
                 model.comp_fea: comp_fea
                 }
             output, test_att, test_pred = sess.run([model.test_output, model.test_att, model.test_pred], feed_dict)
-            return output, test_att, test_pred
-
+            return output, test_att, test_pred 
+        
+        saver = tf.train.Saver()
         checkpoint_fle = tf.train.latest_checkpoint(self.model_dir + '/')
-        saver = tf.train.import_meta_graph(checkpoint_fle + '.meta')
         saver.restore(sess, checkpoint_fle)
         
         stack_output = []
@@ -341,7 +367,7 @@ class UGDSRE:
             stack_pred.append(test_pred)
             stack_true.extend(label)
             stack_scope.extend(input_scope)
-        
+
         stack_output = np.concatenate(stack_output, axis=0)
         stack_label = np.concatenate(stack_label, axis=0)
         stack_att = np.concatenate(stack_att, axis=0)
@@ -351,11 +377,14 @@ class UGDSRE:
         
         exclude_na_flatten_output = stack_output[:,1:]
         exclude_na_flatten_label = stack_label[:,1:]
+        
         score = metrics(stack_label, stack_output)
         performances = score.precision_at_k(self.p_at_n)
         
         y_pred = np.argmax(stack_output, axis=1)
         y_true = np.argmax(stack_label, axis=1)
+
+        print('Accuracy: %s' % accuracy_score(y_true, y_pred))
         
         pr = precision_score(y_true, y_pred, labels=range(1, stack_label.shape[1]), average='micro')
         rc = recall_score(y_true, y_pred, labels=range(1, stack_label.shape[1]), average='micro')
@@ -657,23 +686,23 @@ if __name__ == '__main__':
 
     parser.add_argument('--mode', default='train', type=str, help="please input 'train' or 'test'")
     
-    parser.add_argument('--dir_train', type=str, default='./train_initialized', help='path to the preprocessed dataset for training')
-    parser.add_argument('--dir_test', type=str, default='./test_initialized', help='path to the preprocessed dataset for testing')
-    parser.add_argument('--model_dir', type=str, default='./model_saved', help='path to store the trained model')
-    parser.add_argument('--strategy', type=str, default='none', help='training strategy: none, pretrain, ranking and pretrain_ranking')
+    #parser.add_argument('--dir_train', type=str, default='./train_initialized', help='path to the preprocessed dataset for training')
+    #parser.add_argument('--dir_test', type=str, default='./test_initialized', help='path to the preprocessed dataset for testing')
+    #parser.add_argument('--model_dir', type=str, default='./model_saved', help='path to store the trained model')
+    #parser.add_argument('--strategy', type=str, default='pretrain_ranking', help='training strategy: none, pretrain, ranking and pretrain_ranking')
 
-    parser.add_argument('--p_at_n', type=list, default=[500, 1000, 1500], help='a list of n for calculating precision at top n')
-    parser.add_argument('--result_dir', type=str, default='./results', help='dir to save the results')
+    #parser.add_argument('--p_at_n', type=list, default=[500, 1000, 1500], help='a list of n for calculating precision at top n')
+    #parser.add_argument('--result_dir', type=str, default='./results', help='dir to save the results')
     
     args = parser.parse_args()
 
     if args.mode == 'train':
-        ugdsre_model = UGDSRE(dir_train=args.dir_train, dir_test=args.dir_test, model_dir=args.model_dir, strategy=args.strategy)
+        ugdsre_model = UGDSRE(load_graph=False)
         try:
             ugdsre_model.train()
         except KeyboardInterrupt:
             print('\nFinished training earlier.')
 
     if args.mode == 'test':
-        ugdsre_model = UGDSRE(dir_train=args.dir_train, dir_test=args.dir_test, model_dir=args.model_dir, strategy=args.strategy, result_dir=args.result_dir, p_at_n=args.p_at_n)
+        ugdsre_model = UGDSRE(load_graph=False)
         ugdsre_model.test() 

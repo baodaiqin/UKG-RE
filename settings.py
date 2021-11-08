@@ -19,17 +19,17 @@ DIR_TEST = './test_initialized'
 #path to store the trained model
 MODEL_DIR = './model_saved'
 
-#the number of batch for kg triples
+#the number of batch for training KGC model
 NB_BATCH_TRIPLE = 200
 
-#batch size of target entity pairs
+#batch size of training Distantly Supervised RE model
 BATCH_SIZE = 50
 
 #batch size for testing
 TESTING_BATCH_SIZE = 50
 
 #epochs for training
-MAX_EPOCH = 10
+MAX_EPOCH = 20
 
 #the maximum number of words in a path
 MAX_LENGTH = 120
@@ -40,10 +40,10 @@ HIDDEN_SIZE = 100
 #position embedding size
 POSI_SIZE = 5
 
-#learning rate for nn
+#learning rate for RE model
 LR = 0.02
 
-#learning rate for kgc
+#learning rate for KGC model
 LR_KGC = 0.02
 
 #dropout rate
@@ -56,7 +56,7 @@ MARGIN = 1.0
 SEED = 123
 
 #training strategy: none, pretrain, ranking, pretrain_ranking
-STRATEGY = 'none'
+STRATEGY = 'pretrain_ranking'
 
 #evaluate and save model every n-epoch
 CHECKPOINT_EVERY = 2
@@ -69,3 +69,15 @@ RESULT_DIR = './results'
 
 #precision@top_n prediction
 P_AT_N = [500, 1000, 1500]
+
+#address of KG triplets for training
+ADDR_KG_Train = 'data/kg_train.txt'
+
+#address of KG trplets for testing
+ADDR_KG_Test = 'data/kg_test.txt'
+
+#address of textual triplets
+ADDR_TX = 'data/tx.txt'
+
+#address of pretrained word embeddings
+ADDR_EMB = 'data/vec.txt'

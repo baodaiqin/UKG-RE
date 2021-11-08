@@ -26,7 +26,7 @@ class NN(object):
                 self.rank_topn = rank_topn
                 
 		# placeholders for text models
-		self.word = tf.placeholder(dtype=tf.int32,shape=[None, self.max_length], name='input_words')
+		self.word = tf.placeholder(dtype=tf.int32,shape=[None, self.max_length], name='input_word')
 		self.posi1 = tf.placeholder(dtype=tf.int32,shape=[None, self.max_length], name='input_posi1')
 		self.posi2 = tf.placeholder(dtype=tf.int32,shape=[None, self.max_length], name='input_posi2')
 
@@ -34,11 +34,6 @@ class NN(object):
 		self.head_index = tf.placeholder(dtype=tf.int32,shape=[None], name='head_index')
 		self.tail_index = tf.placeholder(dtype=tf.int32,shape=[None], name='tail_index')
                 
-                #self.label = tf.placeholder(dtype=tf.float32,shape=[self.batch_size, self.num_classes], name='input_label')
-		#self.scope = tf.placeholder(dtype=tf.int32,shape=[self.batch_size+1], name='scope')
-		#self.keep_prob = tf.placeholder(dtype=tf.float32, name='keep_prob')
-		#self.weights = tf.placeholder(dtype=tf.float32,shape=[self.batch_size])
-
                 self.label = tf.placeholder(dtype=tf.float32,shape=[None, self.num_classes], name='input_label')
                 self.scope = tf.placeholder(dtype=tf.int32,shape=[None], name='scope')
                 self.keep_prob = tf.placeholder(dtype=tf.float32, name='keep_prob')
@@ -232,6 +227,7 @@ class CNN(NN):
                                 test_att_output = []
                                 test_pred_output = []
                                 test_pred_score = []
+                                
                                 if not is_inferring:
                                         nb_data = self.testing_batch_size
                                 else:
@@ -271,12 +267,11 @@ class CNN(NN):
                                         test_att_output.append(test_att)
                                         test_pred_output.append(tf.argmax(output))
                                         test_pred_score.append(tf.reduce_max(output))
-                                                
+
 					test_tower_output.append(output)
 				test_stack_output = tf.reshape(tf.stack(test_tower_output),[nb_data, self.num_classes])
 				self.test_output = test_stack_output
                                 self.test_att = tf.concat(test_att_output, 0, name="test_att")
                                 self.test_pred = tf.stack(test_pred_output, name="test_pred")
                                 self.test_sc = tf.stack(test_pred_score, name="test_sc")
-                                
                                 
