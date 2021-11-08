@@ -78,7 +78,7 @@ Default settings are located in `settings.py` script. It contains the following 
   - `nb_path` is the maximum number of paths given an entity pair and a graph (e.g., Textual Graph).
   - `cutoff` is th depth to stop the search of multi-hop path.
   - `infer` outputs a list of predicted results.
-  -  Notice that some entity pairs lack multi-hop path for predicting their relation, thus `len(results) <= len(list_ep)`.
+  -  Notice that some entity pairs might lack multi-hop path for predicting their relation, thus `len(results) <= len(list_ep)`.
   
 - Check the predicted relation and corresponding confidence score:
   ~~~~
