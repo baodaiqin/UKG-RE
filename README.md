@@ -1,11 +1,12 @@
 # UKG-RE
 ### Dependencies
-- python = 2.x and 3.x
+- python = 2.x
 - tensorflow = 1.9.0
 - numpy
 - sklearn
 - tqdm
 - tabulate
+- NetworX
 
 ### Dataset Format:
 ~~~~
