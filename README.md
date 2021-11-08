@@ -35,10 +35,10 @@ Static settings are located in `settings.py` script. It contains the following c
 | `RANK_TOPN` | ranking attention over top or last n complex paths |
 | `RESULT_DIR` | path to store the results |
 | `P_AT_N`| precision@top_n prediction |
-| `ADDR_KG_Train` | address of KG triplets for training e.g., "e1 \t 'location contain' \t e2" |
+| `ADDR_KG_Train` | address of KG triplets for training, e.g., "e1 \t 'location contain' \t e2" |
 | `ADDR_KG_Test` | address of KG trplets for testing |
-| `ADDR_TX` | address of textual triplets e.g., "e1 \t `lived and studied in` \t e2" |
-| `ADDR_EMB` | address of pretrained word embeddings from the Word2Vec e.g., "cases 4.946734 15.195805 6.550739 2.514410 ..." |
+| `ADDR_TX` | address of textual triplets, e.g., "e1 \t 'lived and studied in' \t e2" |
+| `ADDR_EMB` | address of pretrained word embeddings from the Word2Vec, e.g., "cases 4.946734 15.195805 6.550739 2.514410 ..." |
 
 ### Dataset Format:
 ~~~~
