@@ -9,7 +9,7 @@
 - NetworX
 
 ### Configuration:
-Static settings are located in `settings.py` script. It contains the following configuration parameters:
+Default settings are located in `settings.py` script. It contains the following configuration parameters:
 
 | parameter | description |
 |---|---|
@@ -35,95 +35,59 @@ Static settings are located in `settings.py` script. It contains the following c
 | `RANK_TOPN` | ranking attention over top or last n complex paths |
 | `RESULT_DIR` | path to store the results |
 | `P_AT_N`| precision@top_n prediction |
-| `ADDR_KG_Train` | address of KG triplets for training, e.g., "e1 \t 'location contain' \t e2" |
+| `ADDR_KG_Train` | address of KG triplets for training, e.g., "e1 tab 'location contain' tab e2 \n" |
 | `ADDR_KG_Test` | address of KG trplets for testing |
-| `ADDR_TX` | address of textual triplets, e.g., "e1 \t 'lived and studied in' \t e2" |
+| `ADDR_TX` | address of textual triplets, e.g., "e1 tab 'lived and studied in' tab e2 \n", where the textual relation can be tokenized by space. |
 | `ADDR_EMB` | address of pretrained word embeddings from the Word2Vec, e.g., "cases 4.946734 15.195805 6.550739 2.514410 ..." |
 
-### Dataset Format:
-~~~~
-{
-  "word2id": {"w1": 0, "w2": 1, ...},
-  "word2vec": {"w1": [ele1, ele2, ...], "w2": [ele1, ele2, ...], ...},
-  "relation2id": {"rel1": 0, "rel2": 1, ...},
-  "triples": [["h1", "t1", "rel1"], ["h2", "t2", "rel2"], ...],
-  "train":[
-    {
-      "e1_id": "h1",
-      "e2_id": "t1",
-      "e1_word": "w1",
-      "e2_word": "w2",
-      "relation": "rel1",
-      "kg_paths": [[kp1_w1, kp1_w2, ...], [kp2_w1, kp2_w2, ...], ...],
-      "textual_paths": [[tp1_w1, tp1_w2, ...], [tp2_w1, tp2_w2, ...], ...],
-      "hybrid_paths": [[hp1_w1, hp1_w2, ...], [hp2_w1, hp2_w2, ...], ...],
-      "kg_path_e1_e2_positions": [[kp1_e1_posi, kp1_e2_posi], [kp2_e1_posi, kp2_e2_posi], ...],
-      "textual_path_e1_e2_positions": [[tp1_e1_posi, tp1_e2_posi], [tp2_e1_posi, tp2_e2_posi], ...],
-      "hybrid_path_e1_e2_positions": [[kp1_e1_posi, kp1_e2_posi], [kp2_e1_posi, kp2_e2_posi], ...]
-    },
-    {}, ...
-  ],
-  "test": [{same as "train"}, ...]
-}
-~~~~
-   - `word2id` is the mapping of word to its id.
-   - `word2vec` is the mapping of word to its word vector.
-   - `relation2id` is the mapping of relation to its id.
-   - `triples` is the list of KG triples for training a KGC model.
-   - Each entry fo `train` and `test` is a bag of paths, where
-      - `e1_id` and `e2_id` are the KG id of target entity `e1` and entity `e2`.
-      - `relation` is the relation between target entity `e1` and entity `e2`.
-      - `e1_word` and `e2_word` are the textual expression of target entity `e1` and entity `e2`.
-      - `kg_paths` is the bag of paths only consist of knowledge graph edges.
-      - `textual_paths` is the bag of paths only consist of textual edges.
-      - `hybrid_paths` is the bag of paths consist of both knowledge and textual edges.
-      - `kg_path_e1_e2_positions` contains the position of the target entity `e1` and entity `e2` in each path of `kg_paths`.
-      - `textual_path_e1_e2_positions` contains the position of the target entity `e1` and entity `e2` in each path of `textual_paths`.
-      - `hybrid_path_e1_e2_positions` contains the position of the target entity `e1` and entity `e2` in each path of `hybrid_paths`.
-
 ### Usage
-1. Prepare the dataset (e.g., `dataset.json`) in the format as introduced above.
-2. Preprocess the dataset, and store the processed data in specified folders (e.g., `./train_initialized` and `./test_initialized`).
+1. Prepare Knowledge Grpah triplets (i.e., `ADDR_KG_Train` and `ADDR_KG_Test`), Textual triplets (i.e., `ADDR_TX`) and a file of pretrained word embeddings (i.e., `ADDR_EMB`).
+2. Preprocess the dataset (i.e., `ADDR_KG_Train`, `ADDR_KG_Test` and `ADDR_TX`) and store the processed data in specified folders (i.e., `DIR_TRAIN` and `DIR_TEST`).
 
     ~~~~
-    python preprocess.py 
-        --data dataset.json \
-        --fixlen 120 \
-        --dir_out_train ./train_initialized \
-        --dir_out_test ./test_initialized \
+    python preprocess_ug.py \
+      --nb_path 10 \
+      --cutoff 3
     ~~~~
-3. Train your own model on the preprocessed dataset. Static configuration (e.g., hidden size) is located in `settings.py` script.
+    - `nb_path` is the maximum number of paths given an entity pair and a graph (e.g., Textual Graph).
+    - `cutoff` is th depth to stop the search of multi-hop path.
+    
+3. Train your own model on the preprocessed dataset. Necessary static configuration (e.g., `HIDDEN_SIZE`) is located in `settings.py` script as mentioned above.
     ~~~~
-    CUDA_VISIBLE_DEVICES=0 python ugdsre.py \
-        --mode train \
-        --dir_train ./train_initialized \
-        --model_dir ./model_saved \
-        --learning_rate 0.02 \
-        --max_epoch 50 \
-        --strategy pretrain+ranking 
+    CUDA_VISIBLE_DEVICES=1 python2 ugdsre.py --mode train
     ~~~~
-5. Test the trained model.
+
+4. Test the trained model.
     ~~~~
-    CUDA_VISIBLE_DEVICES=0 python ugdsre.py \
-        --mode test \
-        --dir_test ./test_initialized \
-        --model_addr ./model_saved/... 
+    CUDA_VISIBLE_DEVICES=1 python2 ugdsre.py --mode test
     ~~~~
     
 
 ### Easy Start
-- You can import our package and load pre-trained models.
-~~~~
->>> import ugdsre
->>> model = ugdsre.UGDSRE(dir_train='folder_of_the_preprocessed_trainig_data', model_dir='address_to_the_trained_model')
-~~~~
-- Then use `infer` to do bag-level relation extraction from multi-hop `paths`.
-~~~~
->>> model.infer([
-                  {"e1_id": "h1", "e2_id": "t1", "e1_word": "w1", "e2_word": "w2", 
-                  "paths": [["p1_w1", "p1_w2", ...], ...], 
-                  "path_e1_e2_positions": [[p1_e1_posi, p1_e2_posi], ...]}, ...
-                  ])
-
-[("rel1", score), ...]
-~~~~
+- You can import our package and load the recently trained models.
+  ~~~~
+  >>> import ugdsre
+  >>> model = ugdsre.UGDSRE()
+  ~~~~
+  
+- Then use `infer` to predict the relation given a list of entity pairs `[(e1, e2), (e2, e3), ...]`.
+  ~~~~
+  >>> list_ep = [(e1, e2), (e2, e3), ...]
+  >>> results = model.infer(list_ep, nb_path=10, cutoff=3)
+  ~~~~
+  - `nb_path` is the maximum number of paths given an entity pair and a graph (e.g., Textual Graph).
+  - `cutoff` is th depth to stop the search of multi-hop path.
+  - `infer` outputs a list of predicted results.
+  -  Notice that some entity pairs lack multi-hop path for predicting their relation, thus `len(results) <= len(list_ep)`.
+  
+- Check the predicted relation and corresponding confidence score:
+  ~~~~
+  >>> results[i]['triple_sc']
+  (e1, rel1, e2, score)
+  ~~~~
+  
+- Check the supporting multi-hop path evidences and corresponding attention score:
+  ~~~~
+  >>> results[i]['path_att']
+  [(path1, att1), (path2, att2), ...]
+  ~~~~
