@@ -83,13 +83,13 @@ Default settings are located in `settings.py` script. It contains the following 
   - `infer` outputs a list of predicted results.
   -  Notice that some entity pairs might lack multi-hop path for predicting their relation, thus `len(results) <= len(list_ep)`.
   
-- Check the predicted relation and corresponding confidence score:
+- Check the predicted relation `rel` and corresponding confidence score `sc`:
   ~~~~
   >>> results[i]["triple_sc"]
-  (e1, rel1, e2, score)
+  (e1, rel1, e2, sc)
   ~~~~
   
-- Check the supporting multi-hop path evidences and corresponding attention score:
+- Check the supporting multi-hop path evidences `path` and corresponding attention score `att`:
   ~~~~
   >>> results[i]["path_att"]
   [(path1, att1), (path2, att2), ...]
