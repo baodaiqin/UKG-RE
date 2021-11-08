@@ -41,10 +41,10 @@ Default settings are located in `settings.py` script. It contains the following 
 | `ADDR_KG_Train` | address of KG triplets for training, e.g., "e1 tab 'location contain' tab e2 \n" |
 | `ADDR_KG_Test` | address of KG trplets for testing |
 | `ADDR_TX` | address of textual triplets, e.g., "e1 tab 'lived and studied in' tab e2 \n", where the textual relation can be tokenized by space. |
-| `ADDR_EMB` | address of pretrained word embeddings from the Word2Vec, e.g., "cases 4.946734 15.195805 6.550739 2.514410 ..." |
+| `ADDR_EMB` | address of pretrained word embeddings from the Word2Vec, e.g., "cases 4.946734 15.195805 6.550739 2.514410 ... \n" |
 
 ### Usage
-1. Prepare Knowledge Grpah triplets (i.e., `ADDR_KG_Train` and `ADDR_KG_Test`), Textual triplets (i.e., `ADDR_TX`) and a file of pretrained word embeddings (i.e., `ADDR_EMB`).
+1. Prepare Knowledge Grpah triplets (i.e., `ADDR_KG_Train` and `ADDR_KG_Test`)(e.g., "e1 tab 'location contain' tab e2 \n"), Textual triplets (i.e., `ADDR_TX`)(e.g., "e1 tab 'lived and studied in' tab e2 \n") and a file of pretrained word embeddings (i.e., `ADDR_EMB`)(e.g., "cases 4.946734 15.195805 6.550739 2.514410 ... \n").
 2. Preprocess the dataset (i.e., `ADDR_KG_Train`, `ADDR_KG_Test` and `ADDR_TX`) and store the processed data in specified folders (i.e., `DIR_TRAIN` and `DIR_TEST`).
 
     ~~~~
@@ -67,7 +67,7 @@ Default settings are located in `settings.py` script. It contains the following 
     
 
 ### Easy Start
-- You can import our package and load the recently trained models.
+- You can import our package and load the recently trained model.
   ~~~~
   >>> import ugdsre
   >>> model = ugdsre.UGDSRE()
