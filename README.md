@@ -8,6 +8,38 @@
 - tabulate
 - NetworX
 
+### Configuration:
+Static settings are located in `settings.py` script. It contains the following configuration parameters:
+
+| parameter | description |
+|---|---|
+| `CUDA_VISIBLE_DEVICES` | to set the gpu device |
+| `TF_CPP_MIN_LOG_LEVEL` | disable tensorflow compilation warnings |
+| `DIR_TRAIN` | path to the preprocessed dataset for training |
+| `DIR_TEST` | path to the preprocessed dataset for testing |
+| `MODEL_DIR` | path to store the trained model |
+| `NB_BATCH_TRIPLE` | the number of batch for training KGC model |
+| `BATCH_SIZE` | batch size of training Distantly Supervised RE model |
+| `TESTING_BATCH_SIZE` | batch size for testing |
+| `MAX_EPOCH` | epochs for training |
+| `MAX_LENGTH` | the maximum number of words in a path |
+| `HIDDEN_SIZE` | hidden feature size |
+| `POSI_SIZE` | position embedding size |
+| `LR` | learning rate for RE model |
+| `LR_KGC` | learning rate for KGC model |
+| `KEEP_PROB` | dropout rate |
+| `MARGIN` | margin for training KGC model |
+| `SEED` | random seed for initializing weights |
+| `STRATEGY` | training strategy: none, pretrain, ranking and pretrain_ranking|
+| `CHECKPOINT_EVERY` | evaluate and save model every n-epoch |
+| `RANK_TOPN` | ranking attention over top or last n complex paths |
+| `RESULT_DIR` | path to store the results |
+| `P_AT_N`| precision@top_n prediction |
+| `ADDR_KG_Train` | address of KG triplets for training e.g., "e1 \t 'location contain' \t e2" |
+| `ADDR_KG_Test` | address of KG trplets for testing |
+| `ADDR_TX` | address of textual triplets e.g., "e1 \t `lived and studied in` \t e2" |
+| `ADDR_EMB` | address of pretrained word embeddings from the Word2Vec e.g., "cases 4.946734 15.195805 6.550739 2.514410 ..." |
+
 ### Dataset Format:
 ~~~~
 {
