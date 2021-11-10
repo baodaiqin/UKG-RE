@@ -15,28 +15,28 @@ This toolkit aims for Relation Extraction (RE) task. Specifically, given a query
 
 ### Usage
 1. Prepare Knowledge Grpah triplets (for training e.g., `./data/kg_train.txt` and testing e.g., `./data/kg_test.txt`), Textual triplets (e.g., `./data/tx.txt`) and a file of pretrained word embeddings (e.g., `./data/vec.txt`), as the examples below illustrate.
-    - e.g., `./data/kg_train.txt`
+    - `./data/kg_train.txt`
     ~~~~
     C0007603        is associated anatomy of gene product   C0638262
     C1705725        gene plays role in process      C0037083
     C0137996        may treat       C0001126
     ...
     ~~~~
-    - e.g., `./data/kg_test.txt`
+    - `./data/kg_test.txt`
     ~~~~
     C0009766        may be treated by       C0886658
     C3887685        enzyme metabolizes chemical or drug     C0724555
     C1417699        gene plays role in process      C1158770
     ...
     ~~~~
-    - e.g., `./data/tx.txt`
+    - `./data/tx.txt`
     ~~~~
     C0042160        which affects the [HEAD] the retina of the [TAIL] in human ,    C0015392
     C0042160        In [HEAD] isolated arterially perfused rabbit [TAIL] there is direct    C0015392
     C0006104        mRNA in the [HEAD] was found to be preferentially expressed in the [TAIL]       C0228339
     ...
     ~~~~
-    - e.g., `./data/vec.txt`
+    - `./data/vec.txt`
     ~~~~
     ...
     different -3.914909 -5.509016 3.511018 ...
@@ -58,7 +58,7 @@ This toolkit aims for Relation Extraction (RE) task. Specifically, given a query
       --dir_out_train ./train_initialized \
       --dir_out_test ./test_initialized
     ~~~~
-    - `nb_path` is the maximum number of paths given an entity pair and a graph (e.g., Textual Graph).
+    - `nb_path` is the maximum number of multi-hop paths to search, given an entity pair and a graph (e.g., Knowledge Graph).
     - `cutoff` is th depth to stop the search of multi-hop path.
     
 3. Train your own model on the preprocessed dataset. Necessary static configuration (e.g., `HIDDEN_SIZE`) is located in `settings.py`, which is detailed below.
@@ -83,32 +83,33 @@ This toolkit aims for Relation Extraction (RE) task. Specifically, given a query
     
 
 ### Easy Start
-- You can import our package and load the recently trained model.
+- You can import our package.
   ~~~~
   >>> import ukgre as nn
   >>> model = nn.Model()
   ~~~~
   
-- Then use `infer` to predict the relation given a list of entity pairs `[(e1, e2), (e2, e3), ...]`.
+- Then use `infer` to predict the relation given a list of entity pairs via the trained model (e.g., `./model_saved`).
   ~~~~
-  >>> list_ep = [(e1, e2), (e2, e3), ...]
-  >>> results = model.infer(list_ep, nb_path=10, cutoff=3)
+  >>> list_ep = [('C1155065', 'C1332717'), ...]
+  >>> results = model.infer(lst_ep, nb_path=10, cutoff=3, model_dir='./model_saved')
   ~~~~
-  - `nb_path` is the maximum number of paths given an entity pair and a graph (e.g., Textual Graph).
+  - `nb_path` is the maximum number of multi-hop paths to search, given an entity pair and a graph (e.g., Knowledge Graph).
   - `cutoff` is th depth to stop the search of multi-hop path.
   - `infer` outputs a list of predicted results.
   -  Notice that some entity pairs might lack multi-hop path for predicting their relation, thus `len(results) <= len(list_ep)`.
   
-- Check the predicted relation `rel` and corresponding confidence score `sc`:
+- Check the predicted relation (e.g., `biological process involves gene product`) for an entity pair (e.g., `('C1155065', 'C1332717')`) and corresponding confidence score (e.g., `0.97371644`):
   ~~~~
-  >>> results[i]["triple_sc"]
-  (e1, rel1, e2, sc)
+  >>> results[0]["triple_sc"]
+  ('C1155065', 'biological process involves gene product', 'C1332717', 0.97371644)
   ~~~~
   
-- Check the supporting multi-hop path evidences `path` and corresponding attention score `att`:
+- Check the supporting multi-hop path evidences (e.g., `'C1155065 that , upon [HEAD] KCa3.1 channels localize with  ... C1332717'` and corresponding attention score `0.00013606095`, where each hop in a multi-hop path is seperated by an intermediate entity (e.g.,`C0759310`). :
   ~~~~
-  >>> results[i]["path_att"]
-  [(path1, att1), (path2, att2), ...]
+  >>> results[0]["path_att"]
+  [('C1155065 that , upon [HEAD] KCa3.1 channels localize with F-actin and [TAIL] to the IS C0759310 the conformational change [HEAD] for the activation of [TAIL] suggest the existence C0039194 ... C1332717', 0.00013606095), 
+  ...]
   ~~~~
 
 
