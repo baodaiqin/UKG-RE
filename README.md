@@ -36,33 +36,57 @@ This toolkit aims for Relation Extraction (RE) task. Specifically, given a query
     C0006104        mRNA in the [HEAD] was found to be preferentially expressed in the [TAIL]       C0228339
     ...
     ~~~~
+    - e.g., `./data/vec.txt`
+    ~~~~
+    ...
+    different -3.914909 -5.509016 3.511018 ...
+    infection -11.192319 -7.395524 -0.078899 ...
+    one -2.350216 7.864175 -0.542244 ...
+    ...
+    ~~~~
 
-2. Preprocess the dataset (i.e., `ADDR_KG_Train`, `ADDR_KG_Test` and `ADDR_TX`) and store the processed data in specified folders (i.e., `DIR_TRAIN` and `DIR_TEST`).
+2. Preprocess the dataset (e.g., `./data/kg_train.txt`, `./data/kg_test.txt` and `./data/tx.txt`) and store the processed data in specified folders (e.g., `./train_initialized` and `./test_initialized`).
 
     ~~~~
-    python preprocess_ug.py \
+    python2 preprocess_ug.py \
+      --addr_kg_train data/kg_train.txt \
+      --addr_kg_test data/kg_test.txt \
+      --addr_tx data/tx.txt \
+      --addr_emb data/vec.txt \
       --nb_path 10 \
-      --cutoff 3
+      --cutoff 3 \
+      --dir_out_train ./train_initialized \
+      --dir_out_test ./test_initialized
     ~~~~
     - `nb_path` is the maximum number of paths given an entity pair and a graph (e.g., Textual Graph).
     - `cutoff` is th depth to stop the search of multi-hop path.
     
-3. Train your own model on the preprocessed dataset. Necessary static configuration (e.g., `HIDDEN_SIZE`) is located in `settings.py` script as mentioned above.
+3. Train your own model on the preprocessed dataset. Necessary static configuration (e.g., `HIDDEN_SIZE`) is located in `settings.py`, which is detailed below.
     ~~~~
-    CUDA_VISIBLE_DEVICES=1 python2 ugdsre.py --mode train
+    CUDA_VISIBLE_DEVICES=1 python2 ukgre.py \
+      --mode train \
+      --dir_train ./train_initialized \
+      --model_dir ./model_saved
     ~~~~
+    - `dir_train` is the path to the preprocessed dataset for training.
+    - `model_dir` is the path to store the trained model
 
 4. Test the trained model.
     ~~~~
-    CUDA_VISIBLE_DEVICES=1 python2 ugdsre.py --mode test
+    CUDA_VISIBLE_DEVICES=1 python2 ukgre.py \
+      --mode test \
+      --dir_test ./test_initialized \
+      --model_dir ./model_saved
     ~~~~
+    - `dir_test` is the path to the preprocessed dataset for testing.
+    - `model_dir` is the path to the trained model.
     
 
 ### Easy Start
 - You can import our package and load the recently trained model.
   ~~~~
-  >>> import ugdsre
-  >>> model = ugdsre.UGDSRE()
+  >>> import ukgre as nn
+  >>> model = nn.Model()
   ~~~~
   
 - Then use `infer` to predict the relation given a list of entity pairs `[(e1, e2), (e2, e3), ...]`.
