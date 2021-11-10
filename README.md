@@ -83,7 +83,7 @@ This toolkit aims for Relation Extraction (RE) task. Specifically, given a query
     
 
 ### Easy Start
-- You can import our package.
+- You can import our package and load the Univeral Knowledge Graph.
   ~~~~
   >>> import ukgre as nn
   >>> model = nn.Model()
