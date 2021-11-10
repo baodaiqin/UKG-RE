@@ -1,5 +1,7 @@
 # UKG-RE
 
+This toolkit aims for Relation Extraction (RE) task. Specifically, given a query entity pair, this toolkit predicts their relation based on the multi-hop paths between them over a Univeral Knowledge Graph (Knowledge Graph triplets + Textual triplets). The implementation is based on our paper "Two Training Strategies for Improving Relation Extraction over Universal Graph". The overall framework is implemented with TensorFlow and Python interfaces so that it is convenient to run the model on GPUs.
+
 <img src="system_description.png" width="600">
 
 ### Dependencies
@@ -11,40 +13,30 @@
 - tabulate
 - NetworX
 
-### Configuration:
-Default settings are located in `settings.py` script. It contains the following configuration parameters:
-
-| parameter | description |
-|---|---|
-| `CUDA_VISIBLE_DEVICES` | to set the gpu device |
-| `TF_CPP_MIN_LOG_LEVEL` | disable tensorflow compilation warnings |
-| `DIR_TRAIN` | path to the preprocessed dataset for training |
-| `DIR_TEST` | path to the preprocessed dataset for testing |
-| `MODEL_DIR` | path to store the trained model |
-| `NB_BATCH_TRIPLE` | the number of batch for training KGC model |
-| `BATCH_SIZE` | batch size of training Distantly Supervised RE model |
-| `TESTING_BATCH_SIZE` | batch size for testing |
-| `MAX_EPOCH` | epochs for training |
-| `MAX_LENGTH` | the maximum number of words in a path |
-| `HIDDEN_SIZE` | hidden feature size |
-| `POSI_SIZE` | position embedding size |
-| `LR` | learning rate for RE model |
-| `LR_KGC` | learning rate for KGC model |
-| `KEEP_PROB` | dropout rate |
-| `MARGIN` | margin for training KGC model |
-| `SEED` | random seed for initializing weights |
-| `STRATEGY` | training strategy: none, pretrain, ranking and pretrain_ranking|
-| `CHECKPOINT_EVERY` | evaluate and save model every n-epoch |
-| `RANK_TOPN` | ranking attention over top or last n complex paths |
-| `RESULT_DIR` | path to store the results |
-| `P_AT_N`| precision@top_n prediction |
-| `ADDR_KG_Train` | address of KG triplets for training, e.g., "e1 tab 'location contain' tab e2 \n" |
-| `ADDR_KG_Test` | address of KG trplets for testing |
-| `ADDR_TX` | address of textual triplets, e.g., "e1 tab 'lived and studied in' tab e2 \n", where the textual relation can be tokenized by space. |
-| `ADDR_EMB` | address of pretrained word embeddings from the Word2Vec, e.g., "cases 4.946734 15.195805 6.550739 2.514410 ... \n" |
-
 ### Usage
-1. Prepare Knowledge Grpah triplets (i.e., `ADDR_KG_Train` and `ADDR_KG_Test`)(e.g., "e1 tab 'location contain' tab e2 \n"), Textual triplets (i.e., `ADDR_TX`)(e.g., "e1 tab 'lived and studied in' tab e2 \n") and a file of pretrained word embeddings (i.e., `ADDR_EMB`)(e.g., "cases 4.946734 15.195805 6.550739 2.514410 ... \n").
+1. Prepare Knowledge Grpah triplets (for training e.g., `./data/kg_train.txt` and testing e.g., `./data/kg_test.txt`), Textual triplets (e.g., `./data/tx.txt`) and a file of pretrained word embeddings (e.g., `./data/vec.txt`), as the examples below illustrate.
+    - e.g., `./data/kg_train.txt`
+    ~~~~
+    C0007603        is associated anatomy of gene product   C0638262
+    C1705725        gene plays role in process      C0037083
+    C0137996        may treat       C0001126
+    ...
+    ~~~~
+    - e.g., `./data/kg_test.txt`
+    ~~~~
+    C0009766        may be treated by       C0886658
+    C3887685        enzyme metabolizes chemical or drug     C0724555
+    C1417699        gene plays role in process      C1158770
+    ...
+    ~~~~
+    - e.g., `./data/tx.txt`
+    ~~~~
+    C0042160        which affects the [HEAD] the retina of the [TAIL] in human ,    C0015392
+    C0042160        In [HEAD] isolated arterially perfused rabbit [TAIL] there is direct    C0015392
+    C0006104        mRNA in the [HEAD] was found to be preferentially expressed in the [TAIL]       C0228339
+    ...
+    ~~~~
+
 2. Preprocess the dataset (i.e., `ADDR_KG_Train`, `ADDR_KG_Test` and `ADDR_TX`) and store the processed data in specified folders (i.e., `DIR_TRAIN` and `DIR_TEST`).
 
     ~~~~
@@ -94,3 +86,37 @@ Default settings are located in `settings.py` script. It contains the following 
   >>> results[i]["path_att"]
   [(path1, att1), (path2, att2), ...]
   ~~~~
+
+
+### Configuration:
+Default settings are located in `settings.py` script. It contains the following configuration parameters:
+
+| parameter | description |
+|---|---|
+| `CUDA_VISIBLE_DEVICES` | to set the gpu device |
+| `TF_CPP_MIN_LOG_LEVEL` | disable tensorflow compilation warnings |
+| `DIR_TRAIN` | path to the preprocessed dataset for training |
+| `DIR_TEST` | path to the preprocessed dataset for testing |
+| `MODEL_DIR` | path to store the trained model |
+| `NB_BATCH_TRIPLE` | the number of batch for training KGC model |
+| `BATCH_SIZE` | batch size of training Distantly Supervised RE model |
+| `TESTING_BATCH_SIZE` | batch size for testing |
+| `MAX_EPOCH` | epochs for training |
+| `MAX_LENGTH` | the maximum number of words in a path |
+| `HIDDEN_SIZE` | hidden feature size |
+| `POSI_SIZE` | position embedding size |
+| `LR` | learning rate for RE model |
+| `LR_KGC` | learning rate for KGC model |
+| `KEEP_PROB` | dropout rate |
+| `MARGIN` | margin for training KGC model |
+| `SEED` | random seed for initializing weights |
+| `STRATEGY` | training strategy: none, pretrain, ranking and pretrain_ranking|
+| `CHECKPOINT_EVERY` | evaluate and save model every n-epoch |
+| `RANK_TOPN` | ranking attention over top or last n complex paths |
+| `RESULT_DIR` | path to store the results |
+| `P_AT_N`| precision@top_n prediction |
+| `ADDR_KG_Train` | address of KG triplets for training, e.g., "e1 tab 'location contain' tab e2 \n" |
+| `ADDR_KG_Test` | address of KG trplets for testing |
+| `ADDR_TX` | address of textual triplets, e.g., "e1 tab 'lived and studied in' tab e2 \n", where the textual relation can be tokenized by space. |
+| `ADDR_EMB` | address of pretrained word embeddings from the Word2Vec, e.g., "cases 4.946734 15.195805 6.550739 2.514410 ... \n" |
+
