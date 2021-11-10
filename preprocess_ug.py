@@ -311,16 +311,24 @@ def preprocess(fixlen, sf_kg_train, sf_kg_test, sf_tx, sf_emb, nb_path, cutoff,
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
+    parser.add_argument('--addr_kg_train', type=str, default='./data/kg_train.txt', help='address of KG triplets for training')
+    parser.add_argument('--addr_kg_test', type=str, default='./data/kg_test.txt', help='address of KG triplets for testing')
+    parser.add_argument('--addr_tx', type=str, default='./data/tx.txt', help='address of textual triplets')
+    parser.add_argument('--addr_emb', type=str, default='./data/vec.txt', help='address of pretrained word embeddings')
+    
+    parser.add_argument('--dir_out_train', type=str, default='./train_initialized', help='path to the preprocessed dataset for training')
+    parser.add_argument('--dir_out_test', type=str, default='./test_initialized', help='path to the preprocessed dataset for testing')
+    
     parser.add_argument('--nb_path', type=int, default=10, required=True, help='the maximum number of paths given an entity pair and one type of graph')
     parser.add_argument('--cutoff', type=int, default=3, required=True, help='Depth to stop the search')
 
     args = parser.parse_args()
     preprocess(conf.MAX_LENGTH,
-               conf.ADDR_KG_Train,
-               conf.ADDR_KG_Train,
-               conf.ADDR_TX,
-               conf.ADDR_EMB,
+               args.addr_kg_train,
+               args.addr_kg_test,
+               args.addr_tx,
+               args.addr_emb,
                args.nb_path,
                args.cutoff,
-               conf.DIR_TRAIN,
-               conf.DIR_TEST)
+               args.dir_out_train,
+               args.dir_out_test)
