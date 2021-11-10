@@ -1,6 +1,6 @@
 # UKG-RE
 
-This toolkit aims for Relation Extraction (RE) task. Specifically, given a query entity pair, this toolkit predicts their relation based on the multi-hop paths between them over a Univeral Knowledge Graph (Knowledge Graph triplets + Textual triplets). The implementation is based on our paper "Two Training Strategies for Improving Relation Extraction over Universal Graph". The overall framework is implemented with TensorFlow and Python interfaces so that it is convenient to run the model on GPUs.
+This toolkit aims for Relation Extraction (RE) task. Specifically, given a query of entity pair, this toolkit predicts their relation based on the multi-hop paths between them over a Univeral Knowledge Graph (Knowledge Graph triplets + Textual triplets). The implementation is based on our paper "Two Training Strategies for Improving Relation Extraction over Universal Graph" ([PDF](https://arxiv.org/pdf/2102.06540.pdf)). The overall framework is implemented with TensorFlow and Python interfaces so that it is convenient to run the model on GPUs.
 
 <img src="system_description.png" width="600">
 
@@ -92,7 +92,7 @@ This toolkit aims for Relation Extraction (RE) task. Specifically, given a query
 - Then use `infer` to predict the relation given a list of entity pairs via the trained model (e.g., `./model_saved`).
   ~~~~
   >>> list_ep = [('C1155065', 'C1332717'), ...]
-  >>> results = model.infer(lst_ep, nb_path=10, cutoff=3, model_dir='./model_saved')
+  >>> results = model.infer(list_ep, nb_path=10, cutoff=3, model_dir='./model_saved')
   ~~~~
   - `nb_path` is the maximum number of multi-hop paths to search, given an entity pair and a graph (e.g., Knowledge Graph).
   - `cutoff` is th depth to stop the search of multi-hop path.
@@ -105,7 +105,7 @@ This toolkit aims for Relation Extraction (RE) task. Specifically, given a query
   ('C1155065', 'biological process involves gene product', 'C1332717', 0.97371644)
   ~~~~
   
-- Check the supporting multi-hop path evidences (e.g., `'C1155065 that , upon [HEAD] KCa3.1 channels localize with  ... C1332717'` and corresponding attention score `0.00013606095`, where each hop in a multi-hop path is seperated by an intermediate entity (e.g.,`C0759310`). :
+- Check the supporting multi-hop path evidences (e.g., `'C1155065 that , upon [HEAD] KCa3.1 channels localize with  ... C1332717'`) and corresponding attention score (e.g., `0.00013606095`), where each hop in a multi-hop path is seperated by an intermediate entity (e.g.,`C0759310`). :
   ~~~~
   >>> results[0]["path_att"]
   [('C1155065 that , upon [HEAD] KCa3.1 channels localize with F-actin and [TAIL] to the IS C0759310 the conformational change [HEAD] for the activation of [TAIL] suggest the existence C0039194 ... C1332717', 0.00013606095), 
