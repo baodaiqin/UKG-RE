@@ -17,23 +17,18 @@ This toolkit aims for Relation Extraction (RE) task. Specifically, given a query
 1. Prepare Knowledge Grpah triplets (for training e.g., `./data/kg_train.txt` and testing e.g., `./data/kg_test.txt`), Textual triplets (e.g., `./data/tx.txt`) and a file of pretrained word embeddings (e.g., `./data/vec.txt`), as the examples below illustrate.
     - `./data/kg_train.txt`
     ~~~~
-    C0007603        is associated anatomy of gene product   C0638262
-    C1705725        gene plays role in process      C0037083
-    C0137996        may treat       C0001126
-    ...
+    m.09gjxn         people person education        m.02zd2b
+    m.0c05l9         business company parent        m.035nm
+    m.0mfj2  people person ethnicity        m.044038p
+    m.025mq9         people person nationality      m.09c7w0
     ~~~~
-    - `./data/kg_test.txt`
-    ~~~~
-    C0009766        may be treated by       C0886658
-    C3887685        enzyme metabolizes chemical or drug     C0724555
-    C1417699        gene plays role in process      C1158770
-    ...
-    ~~~~
+    
     - `./data/tx.txt`
     ~~~~
-    C0042160        which affects the [HEAD] the retina of the [TAIL] in human ,    C0015392
-    C0042160        In [HEAD] isolated arterially perfused rabbit [TAIL] there is direct    C0015392
-    C0006104        mRNA in the [HEAD] was found to be preferentially expressed in the [TAIL]       C0228339
+    m.0chgzm        i am a religious man , '' said mr. stevens , who is from [HEAD] , [TAIL] . ''   m.0chghy
+    m.0ljsz most of them teach at architecture schools , including [TAIL] and [HEAD] .      m.0z982
+    m.030hcs        with julianne moore , [TAIL] , maggie gyllenhaal and [HEAD] .   m.0blt6
+    m.01wcp_g       do u wanna ride '' has a smooth [TAIL] beat and a smoother [HEAD] chorus .      m.02l840
     ...
     ~~~~
     - `./data/vec.txt`
