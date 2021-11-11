@@ -82,16 +82,27 @@ This toolkit aims for Relation Extraction (RE) task. Specifically, given a query
     - `model_dir` is the path to the trained model.
     
 
-### Easy Start
-- You can import our package and load the Univeral Knowledge Graph.
+### API USAGE
+- Import the script:
   ~~~~
   >>> import ukgre as nn
+  ~~~~
+- Instantiate the model 
+  ~~~~
+  >>> model = nn.Model(
+                        model_dir='./model_saved',
+                        addr_kg_train='data_fb/kg_train.txt',
+                        addr_tx='data_fb/tx.txt'
+                       )
+  ~~~~
+  - without any parameters, the default configuration from the `settings.py` will be used:
+  ~~~~
   >>> model = nn.Model()
   ~~~~
   
 - Then use `infer` to predict the relation given a list of entity pairs via the trained model (e.g., `./model_saved`).
   ~~~~
-  >>> list_ep = [('C1155065', 'C1332717'), ...]
+  >>> list_ep = [('m.09c7w0', 'm.0r89s'), ...]
   >>> results = model.infer(list_ep, nb_path=10, cutoff=3, model_dir='./model_saved')
   ~~~~
   - `nb_path` is the maximum number of multi-hop paths to search, given an entity pair and a graph (e.g., Knowledge Graph).
@@ -99,16 +110,18 @@ This toolkit aims for Relation Extraction (RE) task. Specifically, given a query
   - `infer` outputs a list of predicted results.
   -  Notice that some entity pairs might lack multi-hop path for predicting their relation, thus `len(results) <= len(list_ep)`.
   
-- Check the predicted relation (e.g., `biological process involves gene product`) for an entity pair (e.g., `('C1155065', 'C1332717')`) and corresponding confidence score (e.g., `0.97371644`):
+- Check the predicted relation (e.g., `location location contains`) for an entity pair (e.g., `('('m.09c7w0', 'm.0r89s')`) and corresponding confidence score (e.g., `0.5461379`):
   ~~~~
   >>> results[0]["triple_sc"]
-  ('C1155065', 'biological process involves gene product', 'C1332717', 0.97371644)
+  ('m.09c7w0', 'location location contains', 'm.0r89s', 0.5461379)
   ~~~~
   
-- Check the supporting multi-hop path evidences (e.g., `'C1155065 that , upon [HEAD] KCa3.1 channels localize with  ... C1332717'`) and corresponding attention score (e.g., `0.00013606095`), where each hop in a multi-hop path is seperated by an intermediate entity (e.g.,`C0759310`). :
+- Check the supporting multi-hop path evidences and corresponding attention score, where each hop is marked by `<hop>` and `</hop>`, the token `reverse` represents the reverse relation (i.e., (h, r, t) equals (t, reverse r, h).
   ~~~~
   >>> results[0]["path_att"]
-  [('C1155065 that , upon [HEAD] KCa3.1 channels localize with F-actin and [TAIL] to the IS C0759310 the conformational change [HEAD] for the activation of [TAIL] suggest the existence C0039194 ... C1332717', 0.00013606095), 
+  [("<hop1> m.09c7w0 location country first level divisions m.06mz5 </hop1> 
+     <hop2> m.06mz5 reverse we have people here from canada , [HEAD] , north and [TAIL] , '' she said . '' m.01n7q </hop2> 
+     <hop3> m.01n7q reverse location location containedby m.0r89s </hop3>", 0.030452427), 
   ...]
   ~~~~
 
