@@ -1,20 +1,17 @@
-# UKG-RE
+# Universal Knowledge Graph based Relation Extraction (UKG-RE)
 
-This toolkit aims for Relation Extraction (RE) task. Specifically, given a query of entity pair, this toolkit predicts their relation based on the multi-hop paths between them over a Univeral Knowledge Graph (Knowledge Graph triplets + Textual triplets). The implementation is based on our paper "Two Training Strategies for Improving Relation Extraction over Universal Graph" ([PDF](https://arxiv.org/pdf/2102.06540.pdf)). The overall framework is implemented with TensorFlow and Python interfaces so that it is convenient to run the model on GPUs.
+This toolkit aims for Relation Extraction (RE) task. Specifically, given a query of entity pair, this toolkit predicts their relation based on the multi-hop paths between them over a Univeral Knowledge Graph (Knowledge Graph triplets + Textual triplets). The implementation is based on our paper "Two Training Strategies for Improving Relation Extraction over Universal Graph" ([PDF](https://arxiv.org/pdf/2102.06540.pdf)).
 
 <img src="system_intro.png" width="600">
 
-### Dependencies
-- python = 2.x
-- tensorflow = 1.9.0
-- numpy
-- sklearn
-- tqdm
-- tabulate
-- NetworX
+### Setup
+Install dependencies (consider using a virtual environment):
+~~~~
+pip2 install -r requirements.txt
+~~~~
 
 ### Usage
-1. Prepare Knowledge Grpah triplets (for training e.g., `./data/kg_train.txt` and testing e.g., `./data/kg_test.txt`), Textual triplets (e.g., `./data/tx.txt`) and a file of pretrained word embeddings (e.g., `./data/vec.txt`), as the examples below illustrate.
+1. Prepare Knowledge Grpah triplets (for training e.g., `./data/kg_train.txt` and for testing e.g., `./data/kg_test.txt`), Textual triplets (e.g., `./data/tx.txt`) and a file of pretrained word embeddings (e.g., from Word2Vec) (e.g., `./data/vec.txt`), as the examples below illustrate.
     - `./data/kg_train.txt`
     ~~~~
     m.09gjxn         people person education        m.02zd2b
@@ -31,6 +28,8 @@ This toolkit aims for Relation Extraction (RE) task. Specifically, given a query
     m.01wcp_g       do u wanna ride '' has a smooth [TAIL] beat and a smoother [HEAD] chorus .      m.02l840
     ...
     ~~~~
+    where the spectial tokens `[HEAD]` and `[TAIL]` represent the position of head and tail entity respectively.
+       
     - `./data/vec.txt`
     ~~~~
     ...
@@ -54,7 +53,7 @@ This toolkit aims for Relation Extraction (RE) task. Specifically, given a query
       --dir_out_test ./test_initialized
     ~~~~
     - `nb_path` is the maximum number of multi-hop paths to search, given an entity pair and a graph (e.g., Knowledge Graph).
-    - `cutoff` is th depth to stop the search of multi-hop path.
+    - `cutoff` is the depth to stop the search of multi-hop path.
     
 3. Train your own model on the preprocessed dataset. Necessary static configuration (e.g., `HIDDEN_SIZE`) is located in `settings.py`, which is detailed below.
     ~~~~
@@ -77,20 +76,20 @@ This toolkit aims for Relation Extraction (RE) task. Specifically, given a query
     - `model_dir` is the path to the trained model.
     
 
-### API USAGE
+### API Usage
 - Import the script:
   ~~~~
   >>> import ukgre as nn
   ~~~~
-- Instantiate the model 
+- Load the trained model(e.g., `./model_saved`) and dataset (e.g., 'data/kg_train.txt' and `data/tx.txt`): 
   ~~~~
   >>> model = nn.Model(
                         model_dir='./model_saved',
-                        addr_kg_train='data_fb/kg_train.txt',
-                        addr_tx='data_fb/tx.txt'
+                        addr_kg_train='data/kg_train.txt',
+                        addr_tx='data/tx.txt'
                        )
   ~~~~
-  - without any parameters, the default configuration from the `settings.py` will be used:
+  - without any parameters as below, the default configuration from the `settings.py` will be used:
   ~~~~
   >>> model = nn.Model()
   ~~~~
@@ -105,13 +104,13 @@ This toolkit aims for Relation Extraction (RE) task. Specifically, given a query
   - `infer` outputs a list of predicted results.
   -  Notice that some entity pairs might lack multi-hop path for predicting their relation, thus `len(results) <= len(list_ep)`.
   
-- Check the predicted relation (e.g., `location location contains`) for an entity pair (e.g., `('('m.09c7w0', 'm.0r89s')`) and corresponding confidence score (e.g., `0.5461379`):
+- Check the predicted relation (e.g., `location location contains`) for an entity pair (e.g., `('('m.09c7w0', 'm.0r89s')`) and corresponding confidence score (e.g., `0.5461379`) as below:
   ~~~~
   >>> results[0]["triple_sc"]
   ('m.09c7w0', 'location location contains', 'm.0r89s', 0.5461379)
   ~~~~
   
-- Check the supporting multi-hop path evidences and corresponding attention score, where each hop is marked by `<hop>` and `</hop>`, the token `reverse` represents the reverse relation (i.e., (h, r, t) equals (t, reverse r, h).
+- Check the supporting multi-hop path evidences and corresponding attention score (or weight), where each hop is marked by `<hop>` and `</hop>`, the token `reverse` represents the reverse relation (i.e., (h, r, t) equals (t, reverse r, h).
   ~~~~
   >>> results[0]["path_att"]
   [("<hop1> m.09c7w0 location country first level divisions m.06mz5 </hop1> 
@@ -148,8 +147,8 @@ Default settings are located in `settings.py` script. It contains the following 
 | `RANK_TOPN` | ranking attention over top or last n complex paths |
 | `RESULT_DIR` | path to store the results |
 | `P_AT_N`| precision@top_n prediction |
-| `ADDR_KG_Train` | address of KG triplets for training, e.g., "e1 tab 'location contain' tab e2 \n" |
+| `ADDR_KG_Train` | address of KG triplets for training |
 | `ADDR_KG_Test` | address of KG trplets for testing |
-| `ADDR_TX` | address of textual triplets, e.g., "e1 tab 'lived and studied in' tab e2 \n", where the textual relation can be tokenized by space. |
-| `ADDR_EMB` | address of pretrained word embeddings from the Word2Vec, e.g., "cases 4.946734 15.195805 6.550739 2.514410 ... \n" |
+| `ADDR_TX` | address of textual triplets |
+| `ADDR_EMB` | address of pretrained word embeddings (e.g., from the Word2Vec) |
 
