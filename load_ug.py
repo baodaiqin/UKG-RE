@@ -218,7 +218,10 @@ class UG:
                 if G_tp in ['KG', 'HY'] and len(path) == 2:
                     continue
                 #e.g., path: [1, 10645, 4419, 1825, 4]
-                hops = [source]
+                hop_start = '<hop%s>'
+                hop_end = '</hop%s>'
+                hopi = 1
+                hops = [hop_start % hopi, source]
                 for i1, e1 in enumerate(path[:-1]):
                     e2 = path[i1+1]
                     try:
@@ -233,8 +236,13 @@ class UG:
                         hop = random.sample(lst_r, 1)[0]
                         hops.append(hop)
                         hops.append(es2)
+                        hops.append(hop_end % hopi)
+                        hopi += 1
+                        if i1 + 1 < len(path) - 1:
+                            hops.append(hop_start % hopi)
+                            hops.append(es2)
 
-                if hops != [source]:
+                if hops != [hop_start % 1, source]:
                     mul_hop = ' '.join(hops)
                     all_mul_hop.append(mul_hop)
 
