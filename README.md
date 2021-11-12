@@ -2,7 +2,7 @@
 
 This toolkit aims for Relation Extraction (RE) task. Specifically, given a query of entity pair, this toolkit predicts their relation based on the multi-hop paths between them over a Univeral Knowledge Graph (Knowledge Graph triplets + Textual triplets). The implementation is based on our paper "Two Training Strategies for Improving Relation Extraction over Universal Graph" ([PDF](https://arxiv.org/pdf/2102.06540.pdf)).
 
-<img src="system_intro.png" width="600">
+<img src="system_intro.png" width="700">
 
 ### Setup
 Install dependencies (consider using a virtual environment):
