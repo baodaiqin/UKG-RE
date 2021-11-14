@@ -152,3 +152,7 @@ Default settings are located in `settings.py` script. It contains the following 
 | `ADDR_TX` | address of textual triplets |
 | `ADDR_EMB` | address of pretrained word embeddings (e.g., from the Word2Vec) |
 
+### To Do:
+- BERT-based UKG-RE
+- Japanese version of UKG-RE
+
