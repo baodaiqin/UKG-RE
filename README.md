@@ -100,7 +100,7 @@ pip2 install -r requirements.txt
   >>> results = model.infer(list_ep, nb_path=10, cutoff=3, model_dir='./model_saved')
   ~~~~
   - `nb_path` is the maximum number of multi-hop paths to search, given an entity pair and a graph (e.g., Knowledge Graph).
-  - `cutoff` is th depth to stop the search of multi-hop path.
+  - `cutoff` is the depth to stop the search of multi-hop path.
   - `infer` outputs a list of predicted results.
   -  Notice that some entity pairs might lack multi-hop path for predicting their relation, thus `len(results) <= len(list_ep)`.
   
@@ -153,6 +153,6 @@ Default settings are located in `settings.py` script. It contains the following 
 | `ADDR_EMB` | address of pretrained word embeddings (e.g., from the Word2Vec) |
 
 ### To Do:
-- BERT-based UKG-RE
+- BERT-based UKG-RE (coming soon)
 - Japanese version of UKG-RE
 
