@@ -142,7 +142,7 @@ Default settings are located in `settings.py` script. It contains the following 
 | `KEEP_PROB` | dropout rate |
 | `MARGIN` | margin for training KGC model |
 | `SEED` | random seed for initializing weights |
-| `STRATEGY` | training strategy: none, pretrain, ranking and pretrain_ranking|
+| `STRATEGY` | training strategy: none, pretrain, ranking, pretrain_ranking and locloss|
 | `CHECKPOINT_EVERY` | evaluate and save model every n-epoch |
 | `RANK_TOPN` | ranking attention over top or last n complex paths |
 | `RESULT_DIR` | path to store the results |
