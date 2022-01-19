@@ -111,7 +111,7 @@ class Model:
             stack_label = []
             train_order = range(len(self.data['instance_scope']))
             
-            if strategy in ['none', 'pretrain', 'pretrain_ranking']:
+            if strategy in ['none', 'pretrain', 'pretrain_ranking', 'locloss']:
                 if strategy == 'pretrain_ranking':
                     print('pretrain phase in pretrain_ranking starts!')
                 pbar = tqdm(range(self.max_epoch), desc="Training progress")
@@ -127,7 +127,10 @@ class Model:
                         [label, weights, scope, scope_kg, scope_tx, scope_hy,
                          train_head_batch, train_head_kg_batch, train_head_tx_batch, train_head_hy_batch,
                          train_tail_batch, train_tail_kg_batch, train_tail_tx_batch, train_tail_hy_batch,
-                         index, index_kg, index_tx, index_hy] = self.__load_data_batch(i, train_order)
+                         index, index_kg, index_tx, index_hy,
+                         scope_3tp, train_head_3tp_batch, train_tail_3tp_batch,
+                         train_word_3tp, train_posi1_3tp, train_posi2_3tp,
+                         train_label_3tp, train_comp_fea_3tp] = self.__load_data_batch(i, train_order)
                         
                         label_ = np.zeros((self.batch_size, self.num_classes))
                         label_[np.arange(self.batch_size), label] = 1
@@ -138,6 +141,13 @@ class Model:
                                                                                   self.data['train_posi1'][index,:], self.data['train_posi2'][index,:],
                                                                                   self.data['train_label'][index],
                                                                                   label_, np.array(scope), weights, self.data['train_comp_fea'][index,:])
+
+                        elif strategy in ['locloss']:
+                            output, loss, correct_predictions = self.__train_step(sess, model, train_op, global_step,
+                                                                                  train_head_3tp_batch, train_tail_3tp_batch, train_word_3tp,
+                                                                                  train_posi1_3tp, train_posi2_3tp,
+                                                                                  train_label_3tp,
+                                                                                  label_, np.array(scope_3tp), weights, train_comp_fea_3tp)
 
                         elif strategy in ['pretrain', 'pretrain_ranking']:
                             
@@ -518,7 +528,9 @@ class Model:
         scope_kg = [0]
         scope_tx = [0]
         scope_hy = [0]
-
+        
+        scope_3tp = [0]
+        
         label = []
         weights = []
         train_head_kg_batch = []
@@ -527,6 +539,15 @@ class Model:
         train_tail_tx_batch = []
         train_head_hy_batch = []
         train_tail_hy_batch = []
+
+        train_head_3tp_batch = []
+        train_tail_3tp_batch = []
+
+        train_word_3tp = []
+        train_posi1_3tp = []
+        train_posi2_3tp = []
+        train_label_3tp = []
+        train_comp_fea_3tp = []
 
         for num, num_kg, num_tx, num_hy in zip(input_scope, input_scope_kg, input_scope_tx, input_scope_hy):
             index = index + range(num[0], num[1] + 1)
@@ -539,6 +560,11 @@ class Model:
             scope_tx.append(scope_tx[len(scope_tx)-1] + num_tx[1] - num_tx[0] + 1)
             index_hy = index_hy + range(num_hy[0], num_hy[1] + 1)
             scope_hy.append(scope_hy[len(scope_hy)-1] + num_hy[1] - num_hy[0] + 1)
+
+            scope_3tp.append(scope_3tp[len(scope_3tp)-1] + num_kg[1] - num_kg[0] + 1)#e.g., [0, 3]
+            scope_3tp.append(scope_3tp[len(scope_3tp)-1] + num_tx[1] - num_tx[0] + 1)#e.g., [0, 3, 7]
+            scope_3tp.append(scope_3tp[len(scope_3tp)-1] + num_hy[1] - num_hy[0] + 1)#e.g., [0, 3, 7, 13]
+            
             train_head_kg_batch += [self.data['train_head'][num[0]]]*len(range(num_kg[0], num_kg[1] + 1))
             train_tail_kg_batch += [self.data['train_tail'][num[0]]]*len(range(num_kg[0], num_kg[1] + 1))
             train_head_tx_batch += [self.data['train_head'][num[0]]]*len(range(num_tx[0], num_tx[1] + 1))
@@ -546,13 +572,45 @@ class Model:
             train_head_hy_batch += [self.data['train_head'][num[0]]]*len(range(num_hy[0], num_hy[1] + 1))
             train_tail_hy_batch += [self.data['train_tail'][num[0]]]*len(range(num_hy[0], num_hy[1] + 1))
 
+            train_head_3tp_batch += [self.data['train_head'][num[0]]]*len(range(num_kg[0], num_kg[1] + 1))
+            train_head_3tp_batch += [self.data['train_head'][num[0]]]*len(range(num_tx[0], num_tx[1] + 1))
+            train_head_3tp_batch += [self.data['train_head'][num[0]]]*len(range(num_hy[0], num_hy[1] + 1))
+            train_tail_3tp_batch += [self.data['train_tail'][num[0]]]*len(range(num_kg[0], num_kg[1] + 1))
+            train_tail_3tp_batch += [self.data['train_tail'][num[0]]]*len(range(num_tx[0], num_tx[1] + 1))
+            train_tail_3tp_batch += [self.data['train_tail'][num[0]]]*len(range(num_hy[0], num_hy[1] + 1))
+            
+            train_word_3tp.extend(self.data['train_word_kg'][num_kg[0]:num_kg[1] + 1])
+            train_word_3tp.extend(self.data['train_word_tx'][num_tx[0]:num_tx[1] + 1])
+            train_word_3tp.extend(self.data['train_word_hy'][num_hy[0]:num_hy[1] + 1])
+            train_posi1_3tp.extend(self.data['train_posi1_kg'][num_kg[0]:num_kg[1] + 1])
+            train_posi1_3tp.extend(self.data['train_posi1_tx'][num_tx[0]:num_tx[1] + 1])
+            train_posi1_3tp.extend(self.data['train_posi1_hy'][num_hy[0]:num_hy[1] + 1])
+            train_posi2_3tp.extend(self.data['train_posi2_kg'][num_kg[0]:num_kg[1] + 1])
+            train_posi2_3tp.extend(self.data['train_posi2_tx'][num_tx[0]:num_tx[1] + 1])
+            train_posi2_3tp.extend(self.data['train_posi2_hy'][num_hy[0]:num_hy[1] + 1])
+
+            train_label_3tp.extend(self.data['train_label_kg'][num_kg[0]:num_kg[1] + 1])
+            train_label_3tp.extend(self.data['train_label_tx'][num_tx[0]:num_tx[1] + 1])
+            train_label_3tp.extend(self.data['train_label_hy'][num_hy[0]:num_hy[1] + 1])
+
+            train_comp_fea_3tp.extend(self.data['train_comp_fea_kg'][num_kg[0]:num_kg[1] + 1])
+            train_comp_fea_3tp.extend(self.data['train_comp_fea_tx'][num_tx[0]:num_tx[1] + 1])
+            train_comp_fea_3tp.extend(self.data['train_comp_fea_hy'][num_hy[0]:num_hy[1] + 1])
+            
         train_head_batch = self.data['train_head'][index]
         train_tail_batch = self.data['train_tail'][index]
+
+        train_word_3tp = np.array(train_word_3tp).astype(np.int32)
+        train_posi1_3tp = np.array(train_posi1_3tp).astype(np.int32)
+        train_posi2_3tp = np.array(train_posi2_3tp).astype(np.int32)
 
         data_batch = [label, weights, scope, scope_kg, scope_tx, scope_hy,
                       train_head_batch, train_head_kg_batch, train_head_tx_batch, train_head_hy_batch,
                       train_tail_batch, train_tail_kg_batch, train_tail_tx_batch, train_tail_hy_batch,
-                      index, index_kg, index_tx, index_hy]
+                      index, index_kg, index_tx, index_hy,
+                      scope_3tp, train_head_3tp_batch, train_tail_3tp_batch,
+                      train_word_3tp, train_posi1_3tp, train_posi2_3tp,
+                      train_label_3tp, train_comp_fea_3tp]
         
         return data_batch
 

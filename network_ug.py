@@ -58,6 +58,12 @@ class NN(object):
                                                                initializer=tf.contrib.layers.xavier_initializer(seed=self.seed))
                         self.bias = tf.get_variable('bias',[self.num_classes],dtype=tf.float32,
                                                     initializer=tf.contrib.layers.xavier_initializer(seed=self.seed))
+
+                        self.relation_matrix_loc = tf.get_variable('relation_matrix_loc',[self.num_classes, self.output_size*1],dtype=tf.float32,
+                                                                   initializer=tf.contrib.layers.xavier_initializer(seed=self.seed))
+                        self.bias_loc = tf.get_variable('bias_loc',[self.num_classes],dtype=tf.float32,
+                                                        initializer=tf.contrib.layers.xavier_initializer(seed=self.seed))
+                        
 			# position embeddings
 			temp_posi1_embedding = tf.get_variable('temp_posi1_embedding',[self.posi_num, self.posi_size],dtype=tf.float32,
                                                                initializer=tf.contrib.layers.xavier_initializer(seed=self.seed))
@@ -116,6 +122,52 @@ class NN(object):
 			else:
 				stack_repre = tf.stack(tower_repre)
 		return stack_repre
+
+        def katt_locloss(self, x, head_index, tail_index, scope, is_training = True, dropout = True):
+		with tf.name_scope("knowledge-based-attention"):
+			head_e = tf.nn.embedding_lookup(self.word_embedding, head_index)
+			tail_e = tf.nn.embedding_lookup(self.word_embedding, tail_index)
+                        kg_att = head_e - tail_e
+			attention_logit = tf.reduce_sum(self.transfer(x) * kg_att, 1)
+			tower_repre = []
+
+                        tower_repre_kg = []
+                        tower_repre_tx = []
+                        tower_repre_hy = []
+                        
+			for i in range(self.batch_size):
+                                i = i * 3
+				path_matrix = x[scope[i]:scope[i+3]]#e.g., scope: [0, 3, 7, 14, ...]
+				attention_score = tf.nn.softmax(tf.reshape(attention_logit[scope[i]:scope[i+3]], [1, -1]))
+				final_repre = tf.reshape(tf.matmul(attention_score, path_matrix),[self.output_size])
+				tower_repre.append(final_repre)
+
+                                path_matrix_kg = x[scope[i]:scope[i+1]]
+                                attention_score_kg = tf.nn.softmax(tf.reshape(attention_logit[scope[i]:scope[i+1]], [1, -1]))
+                                final_repre_kg = tf.reshape(tf.matmul(attention_score_kg, path_matrix_kg),[self.output_size])
+                                tower_repre_kg.append(final_repre_kg)
+
+                                path_matrix_tx = x[scope[i+1]:scope[i+2]]
+                                attention_score_tx = tf.nn.softmax(tf.reshape(attention_logit[scope[i+1]:scope[i+2]], [1, -1]))
+                                final_repre_tx = tf.reshape(tf.matmul(attention_score_tx, path_matrix_tx),[self.output_size])
+                                tower_repre_tx.append(final_repre_tx)
+
+                                path_matrix_hy = x[scope[i+2]:scope[i+3]]
+                                attention_score_hy = tf.nn.softmax(tf.reshape(attention_logit[scope[i+2]:scope[i+3]], [1, -1]))
+                                final_repre_hy = tf.reshape(tf.matmul(attention_score_hy, path_matrix_hy),[self.output_size])
+                                tower_repre_hy.append(final_repre_hy)
+                                
+			if dropout:
+				stack_repre = tf.layers.dropout(tf.stack(tower_repre), rate = self.keep_prob, training = is_training)
+                                stack_repre_kg = tf.layers.dropout(tf.stack(tower_repre_kg), rate = self.keep_prob, training = is_training)
+                                stack_repre_tx = tf.layers.dropout(tf.stack(tower_repre_tx), rate = self.keep_prob, training = is_training)
+                                stack_repre_hy = tf.layers.dropout(tf.stack(tower_repre_hy), rate = self.keep_prob, training = is_training)
+			else:
+				stack_repre = tf.stack(tower_repre)
+                                stack_repre_kg = tf.stack(tower_repre_kg)
+                                stack_repre_tx = tf.stack(tower_repre_tx)
+                                stack_repre_hy = tf.stack(tower_repre_hy)
+		return stack_repre, stack_repre_kg, stack_repre_tx, stack_repre_hy
 
         def katt_rank(self, x, head_index, tail_index, scope, is_training = True, dropout = True):
                 with tf.name_scope("knowledge-based-attention"):
@@ -209,10 +261,23 @@ class CNN(NN):
                 elif self.strategy == 'ranking':
                         stack_repre_all, stack_repre_top, stack_repre_last = self.katt_rank(x, self.head_index, self.tail_index, self.scope, is_training)
                         stack_repre = tf.concat([stack_repre_all, stack_repre_top, stack_repre_last], axis=1)
+                elif self.strategy == 'locloss':
+                        stack_repre_part, stack_repre_kg, stack_repre_tx, stack_repre_hy = self.katt_locloss(x, self.head_index, self.tail_index, self.scope, is_training)
+                        stack_repre = tf.concat([stack_repre_part, stack_repre_part, stack_repre_part], axis=1)
                 
 		with tf.name_scope("loss"):
 			logits = tf.matmul(stack_repre, tf.transpose(self.relation_matrix)) + self.bias
 			self.loss = tf.losses.softmax_cross_entropy(onehot_labels = self.label, logits = logits, weights = self.weights)
+                        if self.strategy == 'locloss':
+                                logits_kg = tf.matmul(stack_repre_kg, tf.transpose(self.relation_matrix_loc)) + self.bias_loc
+                                logits_tx = tf.matmul(stack_repre_tx, tf.transpose(self.relation_matrix_loc)) + self.bias_loc
+                                logits_hy = tf.matmul(stack_repre_hy, tf.transpose(self.relation_matrix_loc)) + self.bias_loc
+                                loss_kg = tf.losses.softmax_cross_entropy(onehot_labels = self.label, logits = logits_kg, weights = self.weights)
+                                loss_tx = tf.losses.softmax_cross_entropy(onehot_labels = self.label, logits = logits_tx, weights = self.weights)
+                                loss_hy = tf.losses.softmax_cross_entropy(onehot_labels = self.label, logits = logits_hy, weights = self.weights)
+                                loss_loc = 0.8*loss_kg + 0.1*loss_tx + 0.1*loss_hy
+                                self.loss = self.loss + loss_loc
+                                
 			self.output = tf.nn.softmax(logits)
 			
 			self.predictions = tf.argmax(logits, 1, name="predictions")
@@ -237,7 +302,7 @@ class CNN(NN):
                                         test_attention_score = tf.nn.softmax(tf.transpose(test_attention_logit[self.scope[i]:self.scope[i+1],:]))
                                         final_repre_part = tf.matmul(test_attention_score, x[self.scope[i]:self.scope[i+1]])
 
-                                        if self.strategy in ['none', 'pretrain']:
+                                        if self.strategy in ['none', 'pretrain', 'locloss']:
                                                 final_repre = tf.concat([final_repre_part, final_repre_part, final_repre_part], axis=1)
                                         elif self.strategy in ['ranking', 'pretrain_ranking']:
                                                 comp_fea = self.comp_fea[self.scope[i]:self.scope[i+1]]

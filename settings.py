@@ -29,7 +29,7 @@ BATCH_SIZE = 50
 TESTING_BATCH_SIZE = 50
 
 #epochs for training
-MAX_EPOCH = 20
+MAX_EPOCH = 100
 
 #the maximum number of words in a path
 MAX_LENGTH = 120
@@ -55,8 +55,8 @@ MARGIN = 1.0
 #random seed for initializing weights
 SEED = 123
 
-#training strategy: none, pretrain, ranking, pretrain_ranking
-STRATEGY = 'pretrain_ranking'
+#training strategy: none, pretrain, ranking, pretrain_ranking, locloss
+STRATEGY = 'locloss'
 
 #evaluate and save model every n-epoch
 CHECKPOINT_EVERY = 2
