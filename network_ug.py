@@ -275,7 +275,7 @@ class CNN(NN):
                                 loss_kg = tf.losses.softmax_cross_entropy(onehot_labels = self.label, logits = logits_kg, weights = self.weights)
                                 loss_tx = tf.losses.softmax_cross_entropy(onehot_labels = self.label, logits = logits_tx, weights = self.weights)
                                 loss_hy = tf.losses.softmax_cross_entropy(onehot_labels = self.label, logits = logits_hy, weights = self.weights)
-                                loss_loc = 0.8*loss_kg + 0.1*loss_tx + 0.1*loss_hy
+                                loss_loc = 0.4*loss_kg + 0.3*loss_tx + 0.3*loss_hy
                                 self.loss = self.loss + loss_loc
                                 
 			self.output = tf.nn.softmax(logits)
