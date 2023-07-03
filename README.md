@@ -15,7 +15,7 @@ pip2 install -r requirements.txt
   ~~~
 
 ### Usage
-1. Prepare Knowledge Grpah triplets (for training e.g., `./data/kg_train.txt` and for testing e.g., `./data/kg_test.txt`), Textual triplets (e.g., `./data/tx.txt`) and a file of pretrained word embeddings (e.g., from Word2Vec) (e.g., `./data/vec.txt`) (whicih is not required on BERT version), as the examples below illustrate.
+1. Prepare Knowledge Grpah triplets (for training e.g., `./data/kg_train.txt` and for testing e.g., `./data/kg_test.txt`), Textual triplets (e.g., `./data/tx.txt`) and a file of pretrained word embeddings (e.g., from Word2Vec) (e.g., `./data/vec.txt`) (which is not required on BERT version), as the examples below illustrate.
     - `./data/kg_train.txt`
     ~~~~
     m.09gjxn         people person education        m.02zd2b
