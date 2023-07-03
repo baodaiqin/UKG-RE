@@ -9,9 +9,13 @@ Install dependencies (consider using a virtual environment):
 ~~~~
 pip2 install -r requirements.txt
 ~~~~
+- BERT version:
+  ~~~
+  pip install -r requirements_plm.txt
+  ~~~
 
 ### Usage
-1. Prepare Knowledge Grpah triplets (for training e.g., `./data/kg_train.txt` and for testing e.g., `./data/kg_test.txt`), Textual triplets (e.g., `./data/tx.txt`) and a file of pretrained word embeddings (e.g., from Word2Vec) (e.g., `./data/vec.txt`), as the examples below illustrate.
+1. Prepare Knowledge Grpah triplets (for training e.g., `./data/kg_train.txt` and for testing e.g., `./data/kg_test.txt`), Textual triplets (e.g., `./data/tx.txt`) and a file of pretrained word embeddings (e.g., from Word2Vec) (e.g., `./data/vec.txt`) (whicih is not required on BERT version), as the examples below illustrate.
     - `./data/kg_train.txt`
     ~~~~
     m.09gjxn         people person education        m.02zd2b
@@ -54,33 +58,63 @@ pip2 install -r requirements.txt
     ~~~~
     - `nb_path` is the maximum number of multi-hop paths to search, given an entity pair and a graph (e.g., Knowledge Graph).
     - `cutoff` is the depth to stop the search of multi-hop path.
+- BERT version:
+  ~~~
+  python preprocess_ug_plm.py \
+      --addr_kg_train data/kg_train.txt \
+      --addr_kg_test data/kg_test.txt \
+      --addr_tx data/tx.txt \
+      --addr_emb data/vec.txt \
+      --nb_path 10 \
+      --cutoff 3 \
+      --dir_out_train ./train_initialized \
+      --dir_out_test ./test_initialized
+  ~~~
     
 3. Train your own model on the preprocessed dataset. Necessary static configuration (e.g., `HIDDEN_SIZE`) is located in `settings.py`, which is detailed below.
     ~~~~
-    CUDA_VISIBLE_DEVICES=1 python2 ukgre.py \
+    CUDA_VISIBLE_DEVICES=0 python2 ukgre.py \
       --mode train \
       --dir_train ./train_initialized \
       --model_dir ./model_saved
     ~~~~
     - `dir_train` is the path to the preprocessed dataset for training.
     - `model_dir` is the path to store the trained model
+- BERT version:
+  ~~~
+  CUDA_VISIBLE_DEVICES=0 python ukgre_plm.py \
+      --mode train \
+      --dir_train ./train_initialized \
+      --model_dir ./model_saved
+  ~~~
 
 4. Test the trained model.
     ~~~~
-    CUDA_VISIBLE_DEVICES=1 python2 ukgre.py \
+    CUDA_VISIBLE_DEVICES=0 python2 ukgre.py \
       --mode test \
       --dir_test ./test_initialized \
       --model_dir ./model_saved
     ~~~~
     - `dir_test` is the path to the preprocessed dataset for testing.
     - `model_dir` is the path to the trained model.
-    
+- BERT version:
+  ~~~
+  CUDA_VISIBLE_DEVICES=0 python ukgre_plm.py \
+      --mode test \
+      --dir_test ./test_initialized \
+      --model_dir ./model_saved
+  ~~~
 
 ### API Usage
 - Import the script:
   ~~~~
   >>> import ukgre as nn
   ~~~~
+    - BERT version:
+      ~~~
+      >>> import ukgre_plm as nn 
+      ~~~
+
 - Load the trained model(e.g., `./model_saved`) and dataset (e.g., 'data/kg_train.txt' and `data/tx.txt`): 
   ~~~~
   >>> model = nn.Model(
@@ -134,8 +168,10 @@ Default settings are located in `settings.py` script. It contains the following 
 | `BATCH_SIZE` | batch size of training Distantly Supervised RE model |
 | `TESTING_BATCH_SIZE` | batch size for testing |
 | `MAX_EPOCH` | epochs for training |
+| `PRE_MAX_EPOCH` | epochs for pre-training KGC model |
 | `MAX_LENGTH` | the maximum number of words in a path |
 | `HIDDEN_SIZE` | hidden feature size |
+| `BERT_SIZE` | BERT feature size |
 | `POSI_SIZE` | position embedding size |
 | `LR` | learning rate for RE model |
 | `LR_KGC` | learning rate for KGC model |
@@ -151,8 +187,8 @@ Default settings are located in `settings.py` script. It contains the following 
 | `ADDR_KG_Test` | address of KG trplets for testing |
 | `ADDR_TX` | address of textual triplets |
 | `ADDR_EMB` | address of pretrained word embeddings (e.g., from the Word2Vec) |
+| `BERT_NAME` | pretrained BERT name |
 
 ### To Do:
-- BERT-based UKG-RE (coming soon)
 - Japanese version of UKG-RE
 
