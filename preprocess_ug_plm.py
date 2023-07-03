@@ -1,0 +1,328 @@
+import json
+import argparse
+import os
+import sys
+import numpy as np
+from tqdm import tqdm
+from time import time
+from collections import defaultdict
+import random
+from load_ug_plm import UG
+
+import settings_plm as conf
+
+# plm
+import transformers
+tokenizer = transformers.BertTokenizer.from_pretrained(conf.BERT_NAME)
+
+def pos_embed(x, maxlen):
+    return max(0, min(x + maxlen, maxlen + maxlen + 1))
+
+def indexing_paths(paths, posis, total, fixlen, word2id, relation2id):
+    paths_label = np.zeros((total), dtype = np.int32)
+    paths_head = np.zeros((total), dtype = np.int32)
+    paths_tail = np.zeros((total), dtype = np.int32)
+    # plm
+    paths_input_ids = np.zeros((total, fixlen), dtype = np.int32)
+    paths_att_mask = np.zeros((total, fixlen), dtype = np.int32)
+    paths_type_ids = np.zeros((total, fixlen), dtype = np.int32)
+    paths_ht_ids = np.zeros((total, 2), dtype = np.int32)
+    instance_triple = []
+    instance_scope = []
+
+    pbar = tqdm(paths.items())
+    pathi = -1
+    for triple, lst_path in pbar:
+        ei1, ei2, rel = triple
+        lst_posi = posis[triple]
+
+        headi = word2id[ei1]
+        taili = word2id[ei2]
+        try:
+            reli = relation2id[rel]
+        except KeyError:
+            reli = relation2id['NA']
+
+        for path, posi in zip(lst_path, lst_posi):
+            e1posi, e2posi = posi
+            pathi += 1
+            
+            paths_label[pathi] = reli
+            paths_head[pathi] = headi
+            paths_tail[pathi] = taili
+            
+            if instance_triple == [] or instance_triple[len(instance_triple) - 1] != triple:
+                instance_triple.append(triple)
+                instance_scope.append([pathi,pathi])
+            instance_scope[len(instance_triple) - 1][1] = pathi
+
+            # plm
+            path = ["*"] + path + ["*"]
+            path = ' '.join(path)
+            encoded_dict = tokenizer.encode_plus(path, max_length=fixlen, pad_to_max_length=True)
+            paths_input_ids[pathi] = encoded_dict["input_ids"]
+            paths_att_mask[pathi] = encoded_dict["attention_mask"]
+            paths_type_ids[pathi] = encoded_dict["token_type_ids"]
+            toks = tokenizer.tokenize(path)
+            nb_tok = len(toks)
+            if nb_tok >= fixlen:
+                nb_tok = fixlen - 1
+            paths_ht_ids[pathi] = [1, nb_tok]
+            
+    return paths_head, paths_tail, paths_label, paths_input_ids, paths_att_mask, paths_ht_ids, np.array(instance_scope)
+
+def preprocess_ug_paths(bags, dir_out, fixlen, word2id, relation2id):
+    instance_scope = []
+    instance_scope_kg = []
+    instance_scope_tx = []
+    instance_scope_hy = []
+
+    paths = defaultdict(list)
+    paths_kg = defaultdict(list)
+    paths_tx = defaultdict(list)
+    paths_hy = defaultdict(list)
+
+    posis = defaultdict(list)
+    posis_kg = defaultdict(list)
+    posis_tx = defaultdict(list)
+    posis_hy = defaultdict(list)
+
+    total = 0
+    total_kg = 0
+    total_tx = 0
+    total_hy = 0
+    
+    for bag in bags:
+        e1_id = bag['e1_id']
+        e2_id = bag['e2_id']
+        e1_word = bag['e1_word']
+        e2_word = bag['e2_word']
+        relation = bag['relation']
+
+        triple = (e1_id, e2_id, relation)
+        
+        try:
+            kg_paths = bag['kg_paths']
+            kg_paths_e1_e2_posi = bag['kg_path_e1_e2_positions']
+        except KeyError:
+            kg_paths = [['PADDING']]
+            kg_paths_e1_e2_posi = [[0, 0]]
+            
+        try:
+            tx_paths = bag['textual_paths']
+            tx_paths_e1_e2_posi = bag['textual_path_e1_e2_positions']
+        except KeyError:
+            tx_paths = [['PADDING']]
+            tx_paths_e1_e2_posi = [[0, 0]]
+            
+        try:
+            hy_paths = bag['hybrid_paths']
+            hy_paths_e1_e2_posi = bag['hybrid_path_e1_e2_positions']
+        except KeyError:
+            hy_paths = [['PADDING']]
+            hy_paths_e1_e2_posi = [[0, 0]]
+
+        paths[triple].extend(kg_paths)
+        paths[triple].extend(tx_paths)
+        paths[triple].extend(hy_paths)
+        nb_paths = len(kg_paths) + len(tx_paths) + len(hy_paths)
+        total += nb_paths
+        
+        paths_kg[triple].extend(kg_paths)
+        paths_tx[triple].extend(tx_paths)
+        paths_hy[triple].extend(hy_paths)
+        total_kg += len(kg_paths)
+        total_tx += len(tx_paths)
+        total_hy += len(hy_paths)
+
+        posis[triple].extend(kg_paths_e1_e2_posi)
+        posis[triple].extend(tx_paths_e1_e2_posi)
+        posis[triple].extend(hy_paths_e1_e2_posi)
+
+        posis_kg[triple].extend(kg_paths_e1_e2_posi)
+        posis_tx[triple].extend(tx_paths_e1_e2_posi)
+        posis_hy[triple].extend(hy_paths_e1_e2_posi)
+
+    print('Indexing ug paths ...:')
+    paths_head, paths_tail, paths_label, paths_input_ids, paths_att_mask, paths_ht_ids, instance_scope = indexing_paths(paths, posis, total, fixlen, word2id, relation2id)
+    print('Indexing kg paths ...:')
+    paths_head_kg, paths_tail_kg, paths_label_kg, paths_input_ids_kg, paths_att_mask_kg, paths_ht_ids_kg, instance_scope_kg = indexing_paths(paths_kg, posis_kg, total_kg, fixlen, word2id, relation2id)
+    print('Indexing textual paths ...:')
+    paths_head_tx, paths_tail_tx, paths_label_tx, paths_input_ids_tx, paths_att_mask_tx, paths_ht_ids_tx, instance_scope_tx = indexing_paths(paths_tx, posis_tx, total_tx, fixlen, word2id, relation2id)
+    print('Indexing hybrid paths ...:')
+    paths_head_hy, paths_tail_hy, paths_label_hy, paths_input_ids_hy, paths_att_mask_hy, paths_ht_ids_hy, instance_scope_hy = indexing_paths(paths_hy, posis_hy, total_hy, fixlen, word2id, relation2id)
+
+    if not os.path.exists(dir_out):
+        os.makedirs(dir_out)
+
+    np.save(dir_out + '/' + 'head', paths_head)
+    np.save(dir_out + '/' + 'tail', paths_tail)
+    np.save(dir_out + '/' + 'label', paths_label)
+    np.save(dir_out + '/' + 'input_ids', paths_input_ids)
+    np.save(dir_out + '/' + 'att_mask', paths_att_mask)
+    np.save(dir_out + '/' + 'ht_ids', paths_ht_ids)
+    np.save(dir_out + '/' + 'scope', instance_scope)
+
+    np.save(dir_out + '/' + 'head_kg', paths_head_kg)
+    np.save(dir_out + '/' + 'tail_kg', paths_tail_kg)
+    np.save(dir_out + '/' + 'label_kg', paths_label_kg)
+    np.save(dir_out + '/' + 'input_ids_kg', paths_input_ids_kg)
+    np.save(dir_out + '/' + 'att_mask_kg', paths_att_mask_kg)
+    np.save(dir_out + '/' + 'ht_ids_kg', paths_ht_ids_kg)
+    np.save(dir_out + '/' + 'scope_kg', instance_scope_kg)
+
+    np.save(dir_out + '/' + 'head_tx', paths_head_tx)
+    np.save(dir_out + '/' + 'tail_tx', paths_tail_tx)
+    np.save(dir_out + '/' + 'label_tx', paths_label_tx)
+    np.save(dir_out + '/' + 'input_ids_tx', paths_input_ids_tx)
+    np.save(dir_out + '/' + 'att_mask_tx', paths_att_mask_tx)
+    np.save(dir_out + '/' + 'ht_ids_tx', paths_ht_ids_tx)
+    np.save(dir_out + '/' + 'scope_tx', instance_scope_tx)
+
+    np.save(dir_out + '/' + 'head_hy', paths_head_hy)
+    np.save(dir_out + '/' + 'tail_hy', paths_tail_hy)
+    np.save(dir_out + '/' + 'label_hy', paths_label_hy)
+    np.save(dir_out + '/' + 'input_ids_hy', paths_input_ids_hy)
+    np.save(dir_out + '/' + 'att_mask_hy', paths_att_mask_hy)
+    np.save(dir_out + '/' + 'ht_ids_hy', paths_ht_ids_hy)
+    np.save(dir_out + '/' + 'scope_hy', instance_scope_hy)
+
+def prepocess_kg_triple(triples, word2id, relation2id, dir_out):
+    total = len(triples)
+    all_hi = []
+    all_ti = []
+    d_tup = {}
+    kg_tup = []
+    kg_tup_neg = []
+
+    for h, t, rel in triples:
+        try:
+            hi = word2id[h]
+            ti = word2id[t]
+            reli = relation2id[rel]
+        except KeyError:
+            continue
+        d_tup[(hi, ti, reli)] = True
+        all_hi.append(hi)
+        all_ti.append(ti)
+        tup = [hi, ti, reli]
+        kg_tup.append(tup)
+
+    all_hi = list(set(all_hi))
+    all_ti = list(set(all_ti))
+    for hi, ti, reli in kg_tup:
+        neg_hi = hi
+        neg_ti = ti
+        neg_tup = [neg_hi, neg_ti, reli]
+        while True:
+            ht_prob = np.random.binomial(1, 0.5)
+            if ht_prob:
+                neg_hi = random.choice(all_hi)
+            else:
+                neg_ti = random.choice(all_ti)
+            neg_tup[0] = neg_hi
+            neg_tup[1] = neg_ti
+            try:
+                d_tup[tuple(neg_tup)]
+            except KeyError:
+                break
+        kg_tup_neg.append(neg_tup)
+
+    kg_tup = np.array(kg_tup, dtype=np.int32)
+    kg_tup_neg = np.array(kg_tup_neg, dtype=np.int32)
+
+    if not os.path.exists(dir_out):
+        os.makedirs(dir_out)
+
+    np.save(dir_out + '/' + 'kg', kg_tup)
+    np.save(dir_out + '/' + 'kg_neg', kg_tup_neg)
+
+def preprocess_vec(word2id, dir_out):
+    nb_voc = len(word2id)
+    vec_dim = conf.HIDDEN_SIZE
+    vec = np.ones((nb_voc, vec_dim), dtype = np.float32)
+    
+    if not os.path.exists(dir_out):
+        os.makedirs(dir_out)
+    np.save(dir_out + '/' + 'vec', vec)
+    
+def preprocess(fixlen, sf_kg_train, sf_kg_test, sf_tx, sf_emb, nb_path, cutoff,
+               dir_out_train, dir_out_test):
+
+    ug = UG(sf_kg_train, sf_kg_test, sf_tx, sf_emb, nb_path, cutoff)
+    data = ug.dataset
+
+    try:
+        word2id = data['word2id']
+        if 'UNK' not in word2id:
+            word2id['UNK'] = len(word2id)
+        if 'BLANK' not in word2id:
+            word2id['BLANK'] = len(word2id)
+        if 'PADDING' not in word2id:
+            word2id['PADDING'] = len(word2id)
+    except KeyError:
+        print('There is no word2id!')
+        raise
+
+    try:
+        relation2id = data['relation2id']
+    except KeyError:
+        print('There is no relation2id!')
+        raise
+
+    try:
+        triples = data['triples']
+    except KeyError:
+        print('There is no triples!')
+        raise
+
+    for ent1, ent2, rel in triples:
+        if ent1 not in word2id:
+            word2id[ent1] = len(word2id)
+        if ent2 not in word2id:
+            word2id[ent2] = len(word2id)
+
+    if not os.path.exists(dir_out_train):
+        os.makedirs(dir_out_train)
+    with open(dir_out_train + '/' + 'relation2id.json', 'w') as fle_rel2id:
+        json.dump(relation2id, fle_rel2id)
+    with open(dir_out_train + '/' + 'word2id.json', 'w') as fle_w2id:
+        json.dump(word2id, fle_w2id)
+            
+    print('preprocessing word2vec ...')
+    preprocess_vec(word2id, dir_out_train)
+        
+    print('preprocessing triples ...')
+    prepocess_kg_triple(triples, word2id, relation2id, dir_out_train)
+                
+    bags_train = data['train']
+    bags_test = data['test']
+    print('preprocessing training data ...')
+    preprocess_ug_paths(bags_train, dir_out_train, fixlen, word2id, relation2id)
+    print('preprocessing testing data ...')
+    preprocess_ug_paths(bags_test, dir_out_test, fixlen, word2id, relation2id)
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument('--addr_kg_train', type=str, default='./data/kg_train.txt', help='address of KG triplets for training')
+    parser.add_argument('--addr_kg_test', type=str, default='./data/kg_test.txt', help='address of KG triplets for testing')
+    parser.add_argument('--addr_tx', type=str, default='./data/tx.txt', help='address of textual triplets')
+    parser.add_argument('--addr_emb', type=str, default='./data/vec.txt', help='address of pretrained word embeddings')
+    
+    parser.add_argument('--dir_out_train', type=str, default='./train_initialized', help='path to the preprocessed dataset for training')
+    parser.add_argument('--dir_out_test', type=str, default='./test_initialized', help='path to the preprocessed dataset for testing')
+    
+    parser.add_argument('--nb_path', type=int, default=10, required=True, help='the maximum number of paths given an entity pair and one type of graph')
+    parser.add_argument('--cutoff', type=int, default=3, required=True, help='Depth to stop the search')
+
+    args = parser.parse_args()
+    preprocess(conf.MAX_LENGTH,
+               args.addr_kg_train,
+               args.addr_kg_test,
+               args.addr_tx,
+               args.addr_emb,
+               args.nb_path,
+               args.cutoff,
+               args.dir_out_train,
+               args.dir_out_test)
